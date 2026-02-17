@@ -1,0 +1,23 @@
+{
+  "name": "saasufy-agent-skills",
+  "owner": {
+    "name": "Jonathan Gros-Dubois",
+    "email": "jon@socketcluster.io"
+  },
+  "metadata": {
+    "description": "Saasufy skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "saasufy-skills",
+      "description": "Skills for building Saasufy applications.",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/saasufy"
+      ]
+    }
+  ]
+}
+

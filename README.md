@@ -1,2 +1,2 @@
 # skills
-Saasufy AI Skills
+Saasufy AI Skills Marketplace
