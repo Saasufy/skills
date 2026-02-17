@@ -26,5 +26,5 @@ Browse to the `saasufy` plugin and install.
 Once you've installed the Saasufy plugin/skill, you can just ask Claude to set up your app with a prompt like:
 
 ```
-Please setup this Saasufy app.
+Please set up this Saasufy app.
 ```
