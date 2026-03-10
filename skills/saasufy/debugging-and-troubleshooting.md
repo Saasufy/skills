@@ -73,6 +73,48 @@ For example:
 ```
 By default, for efficiency reasons, change notifications originating from a specific CRUD action are not sent to the socket which initiated the action (anti-self-delivery feature).
 
+### Nested template expression inside curly brackets not updating as expected
+
+In Saasufy, template expressions are evaluated as soon as possible (as soon as the expression can execute without throwing an error).
+If an `{{expression}}` is nested inside a child component, it may be evaluated and substituted by the parent component before the child component itself was rendered; this means that when the child component updates itself later, the inner expression has already been substituted and is therefore not re-evaluated.
+
+This issue can be resolved by using a variable from the child component as part of the expression; this ensures that the expression would fail to be evaluated during the parent's rendering phase and will be picked up later by the child component which has the necessary variable.
+
+For example, the nested template expression `{{Date.now()}}` below would be evaluated by the parent app-router and not by the child app-router; this means that the timestamp would not update as expected when the `/product/:productName` sub-route changes:
+
+```js
+<app-router>
+  <template slot="page" partial-route route-path="/category/:categoryName">
+    <app-router>
+      <template slot="page" partial-route route-path="/product/:productName">
+        <div>Product was loaded at: {{Date.now()}}</div>
+      </template>
+      <div slot="viewport"></div>
+    </app-router>
+  </template>
+  <div slot="viewport"></div>
+</app-router>
+```
+
+You can force the expression to be re-evaluated by the child app-router by referencing one of its variables.
+For example, the above markup could be written as:
+
+```js
+<app-router>
+  <template slot="page" partial-route route-path="/category/:categoryName">
+    <app-router>
+      <template slot="page" partial-route route-path="/product/:productName">
+        <div>Product was loaded at: {{(() => Date.now())(productName)}}</div>
+      </template>
+      <div slot="viewport"></div>
+    </app-router>
+  </template>
+  <div slot="viewport"></div>
+</app-router>
+```
+
+Even though the `productName` variable from the child app-router is not being used inside the fat-arrow function, merely referencing it inside the expression creates a dependency on that variable which ensures that the expression will not be accidentally rendered by the parent app-router.
+
 ### Issues related to passing reserved characters in HTML attributes such as commas and equal signs
 
 Some component attributes take comma-separated values. In certain advanced scenarios, you may want the value for one of the properties to itself be a comma-separate value. In this case you would need to add single quotation marks around the nested value. See how the comma-separated value of the `fields` property is specified below.
