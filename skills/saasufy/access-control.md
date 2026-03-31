@@ -43,7 +43,8 @@ These properties control overall access to the Model:
 - `accessTokenAuthField` (string): Field name in the user's JWT token used for authentication (default: "accountId")
 - `accessModelAuthField` (string): Field name in the Model record used for authentication/ownership verification (default: "accountId"; if it exists)
 - `accessEnableMultipleOwners` (boolean): Allow multiple users to own a record
-- `accessAllowByDefaultOwners` (boolean): Allow all users as owners by default
+- `accessAllowByDefaultOwners` (boolean): Allow records without owners to be read and written to by anyone
+- `accessViewsPublicByDefault` (boolean): If true, all views which are not protected by a parameter matching `accessModelAuthField` will be treated as public views; this means that anyone will be able to obtain a listing of record UUIDs within that view, however, this does not expose any of the values/data
 - `accessCreate` (enum): Who can create records
 - `accessRead` (enum): Who can read records
 - `accessUpdate` (enum): Who can update records
@@ -54,11 +55,11 @@ These properties control overall access to the Model:
 These properties provide fine-grained control over specific actions:
 
 - `accessEnableMultipleCreators` (boolean): Allow multiple creators
-- `accessAllowByDefaultCreators` (boolean): Allow all users as creators by default
+- `accessAllowByDefaultCreators` (boolean): Allow records to be created without owners
 - `accessEnableMultipleReaders` (boolean): Allow multiple readers
-- `accessAllowByDefaultReaders` (boolean): Allow all users as readers by default
+- `accessAllowByDefaultReaders` (boolean): Allow records without owners to be read by anyone
 - `accessEnableMultipleUpdaters` (boolean): Allow multiple updaters
-- `accessAllowByDefaultUpdaters` (boolean): Allow all users as updaters by default
+- `accessAllowByDefaultUpdaters` (boolean): Allow records without owners to be updated by anyone
 - `accessEnableMultipleDeleters` (boolean): Allow multiple deleters
 - `accessAllowByDefaultDeleters` (boolean): Allow all users as deleters by default
 
