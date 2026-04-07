@@ -54,10 +54,10 @@ After saving the credential:
 - Let them know that this file should be kept secure and should NOT be committed to version control
 - Verify that `.saasufy-api-key` is listed in `.gitignore` (create or update `.gitignore` if needed)
 
-### Step 4: Ask the user to perform the first deployment
+### Step 4: Perform the first deployment
 
-- Ask the user to log into their Saasufy control panel click on the `Deploy service` button on their `Dashboard` page.
-- Ask to copy the `Service URL` and provide it to you.
+- Deploy the user's service using your `Saasufy Deployment and Testing` Saasufy skill.
+- The API endpoint response should contain the user's `Service URL`.
 - Once you have their service URL, replace the dummy one from the `.saasufy-service-url` file located in the project root.
 
 ### Step 5: Test the connection (optional)
