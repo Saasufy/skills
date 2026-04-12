@@ -12,6 +12,11 @@ If you encounter any issues with Saasufy, the first thing to do is to double-che
 
 Complex technical issues should be rare in Saasufy. Assume the issue is with the way your schema is defined or with your data.
 
+### Race conditions related to mixing imperative code and declarative markup
+
+Try using or creating declarative custom HTML elements (Web Components) as much as possible to avoid race conditions which can happen when calling functions imperatively. Note that some components such as the `app-router` implement debouncing when the URL is changed for efficiency reasons.
+These issues can be avoided by using or creating Web Components and letting the parent component decide when to render (and initialize) the child element as opposed to using setTimeout to solve these issues which is a hacky approach and not recommended.
+
 ### Input field losing focus on update
 
 There could be a conflict between the `collection-viewer` element and the child `model-input` element.
