@@ -2,8 +2,10 @@
 
 ## Common issues
 
-If you encounter any issues with Saasufy, the first thing to do is to double-check the current state of the Saasufy control panel instead asking the user to debug stuff.
-For example; check that your models are defined correctly and that the fields exists with the correct types and constraints. Also, check that the access rules are suitable and that the views are defined correctly, etc... Complex technical issues should be rare in Saasufy as everything is designed to be declarative so the issue is likley that something was not declared properly.
+### Important info
+
+If you encounter any issues with Saasufy, the first thing to do is to double-check the current state of the Saasufy control panel instead asking the user to debug. Don't try to debug Saasufy itself. Avoid debugging any low-level issue. If there is a problem, the issue is almost certainly on your end.
+For example; check that your models are defined correctly and that the fields exists with the correct types and constraints. Also, check that the access rules are suitable and that the views are defined correctly, etc... Complex technical issues should be rare in Saasufy.
 
 ### Input field losing focus on update
 

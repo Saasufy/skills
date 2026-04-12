@@ -73,7 +73,7 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 ## Debugging and Troubleshooting
 
-[debugging-and-troubleshooting.md](debugging-and-troubleshooting.md): A guide with a comprehensive list of common issues. This is particularly useful for resolving issues such as missed realtime updates, loss of focus of input elements or data not appearing as expected. It's a good practice to avoid debugging as much as possible and to double-check the relevant Saasufy schema and data instead.
+[debugging-and-troubleshooting.md](debugging-and-troubleshooting.md): A guide with a comprehensive list of common issues. This is particularly useful for resolving issues such as missed realtime updates, loss of focus of input elements or data not appearing as expected.
 
 ## Deployment and Testing
 
