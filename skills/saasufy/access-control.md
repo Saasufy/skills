@@ -333,7 +333,7 @@ If a field is not appearing in responses:
 
 ### Filtering Results By Account ID
 
-You can filter based on an account ID by specifying an `accountId` property to the relevant component's attribute; for example by adding the relevant `socket.authToken.accountId` value to the `collection-view-params` attribute of the `collection-viewer` component. Note that the `socket` object can be accessed inside template expressions with double or triple curly braces. Relevant access controls will be enforced by matching the `accountId` from the `socket.authToken` against the `accountId` view param passed to the view.
+You can filter based on an account ID by passing an `accountId` property to the component; for example by adding the relevant `socket.authToken.accountId` value to the `collection-view-params` attribute of the `collection-viewer` component. Note that the `socket` object can be accessed inside template expressions with double or triple curly braces. Relevant access controls will be enforced by matching the `accountId` from the `socket.authToken` against the `accountId` on the records. You should make sure that the view transformation/query is defined correctly inside Saasufy; the view should only return records that are associated with the `accountId` which was passed in as a view param or else you will see permission errors.
 
 ```html
 <collection-viewer
@@ -359,3 +359,7 @@ You can filter based on an account ID by specifying an `accountId` property to t
   <div slot="viewport"></div>
 </collection-viewer>
 ```
+
+### OAuth
+
+Saasufy exposes OAuth providers from the control panel and also through the Admin HTTP API via the `OAuthProvider` model. This is how you can add new OAuth providers and modify existing ones (e.g. to set the client ID and secret). See [schema-management.md](schema-management.md) and [data-management.md](data-management.md) guides for info about how to do this using the Admin HTTP API.

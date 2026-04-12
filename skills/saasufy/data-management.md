@@ -211,3 +211,13 @@ When helping users manage their data:
 3. **Show them the results** - After creating/updating, fetch and display the record
 4. **Suggest useful views** - Help them query data efficiently
 5. **Validate before submitting** - Check that required fields are provided and types match
+
+## Impersonating an account via HTTP API
+
+When you add records to a collection via the HTTP API, it's possible to automatically associate it with a specific `accountId`. 
+To do this, you first need to ensure that the Model has an `accountId` field defined on it; this is where the client's account ID will be added. This field must be a `uuid` string.
+
+Then, you need to associate your HTTP API credential with an account ID of your choice.
+You can do this by navigating to the `Authentication` page of the Saasufy control panel and scrolling down to the `HTTP API credentials` table. You can associate an API credential with any account ID you like; it can be used to impersonate existing users from your service's `Account` table or you can generate a random account ID by clicking into an empty Account ID (UUID) field next to the relevant API credential and then pressing the enter key.
+
+This will ensure that whenever you create a new record using this HTTP API, this record's `accountId` will be set to the one you configured via the control panel. You can change the `accountId` associated with a specific API credential later if required.

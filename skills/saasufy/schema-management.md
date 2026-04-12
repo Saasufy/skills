@@ -24,6 +24,14 @@ All Admin HTTP API endpoints use: `https://saasufy.com/api/`
 ## Model Management
 
 Models represent collections (like database tables) in your Saasufy service.
+An admin can access the following resources via the admin HTTP API:
+
+- Model
+- ModelField
+- ModelIndex
+- ModelView
+- BlockchainAuthProvider
+- OAuthProvider
 
 ### List All Models
 

@@ -175,4 +175,13 @@ You can filter based on an account ID by specifying an `accountId` property to t
 ### View is empty
 
 There may not be any data for that view which matches the specified filters.
-Otherwise, check that the view is defined correctly. See the `Create a New View` section of the `schema-management.md` guide for details and ensure that it's matching the `paramFields` which are passed to the view against matching model fields. If using advanced queries, check the `search-filtering-querying.md` guide.
+Otherwise, check that the view is defined correctly. See the `Create a New View` section of the [schema-management.md](schema-management.md) guide for details and ensure that it's matching the `paramFields` which are passed to the view against matching model fields. If using advanced queries, check the [search-filtering-querying.md](search-filtering-querying.md) guide.
+
+### No permission to read
+
+If you see an error like "You do not have permission to perform the ... operation on the ... field", it means that the current client doesn't have the right to access that resource. Saasufy enforces access control at the field level so you may get multiple such errors; one for each field you try to read. To make the error go away, check that your view is defined correctly and that it filters out records which belong to other accounts. You should be careful about setting the read access to "allow" as it will allow anyone to read the resource which may be undesirable.
+
+### Views are showing empty data while authenticated
+
+Check that there is data associated with your specific `accountId` within the specified collection/view. If some of the data was created via the Saasufy HTTP API, check that the account ID associated with your API credential is as expected. You can associate an HTTP API credential with an account ID of your choice. See the `Impersonating an account via HTTP API` section of the [data-management.md](data-management.md) guide for details.
+
