@@ -32,6 +32,7 @@ An admin can access the following resources via the admin HTTP API:
 - ModelView
 - BlockchainAuthProvider
 - OAuthProvider
+- APICredential
 
 ### List All Models
 
