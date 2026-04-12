@@ -2,6 +2,9 @@
 
 ## Common issues
 
+If you encounter any issues with Saasufy, the first thing to do is to double-check the current state of the Saasufy control panel instead asking the user to debug stuff.
+For example; check that your models are defined correctly and that the fields exists with the correct types and constraints. Also, check that the access rules are suitable and that the views are defined correctly, etc... Complex technical issues should be rare in Saasufy as everything is designed to be declarative so the issue is likley that something was not declared properly.
+
 ### Input field losing focus on update
 
 There could be a conflict between the `collection-viewer` element and the child `model-input` element.
