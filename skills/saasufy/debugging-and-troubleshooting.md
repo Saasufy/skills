@@ -156,3 +156,8 @@ You can filter based on an account ID by specifying an `accountId` property to t
   <div slot="viewport"></div>
 </collection-viewer>
 ```
+
+### View is empty
+
+There may not be any data for that view which matches the specified filters.
+Otherwise, check that the view is defined correctly. See the `Create a New View` section of the `schema-management.md` guide for details and ensure that it's matching the `paramFields` which are passed to the view against matching model fields. If using advanced queries, check the `search-filtering-querying.md` guide.

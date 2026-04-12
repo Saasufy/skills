@@ -189,22 +189,23 @@ Required fields:
 - `name` (string, view name)
 
 Optional fields for configuring the view:
-- `paramFields` (string, comma-separated field names used as parameters)
-- `primaryFields` (string, comma-separated primary index fields)
-- `affectingFields` (string, fields that affect the view results)
-- `transformIndex` (string, index to use for the transform)
+- `paramFields` (string, comma-separated field names used as parameters); aim to make them match field names on the model if there is a corresponding field.
+- `primaryFields` (string, comma-separated primary index fields); can reference any field on the model.
+- `affectingFields` (string, fields that affect the view results); not needed most of the time but can be used to ensure that changing a specific non-primary field will trigger realtime notifications for that view.
+- `transformIndex` (string, index to use for the transform); can reference any field on the model (or an index); if an index doesn't yet exist on a field; it will be created by Saasufy automatically on the next deployment.
 - `transformIndexOperation` (string, can be "equals" or "between")
 - `transformIndexOperationInputA`: (string, typically referencing a viewParam passed into the view from the frontend; for example "$paramFields.companyEmployeeCountLow")
 - `transformIndexOperationInputB`: (string, represents the second operand if the "between" index operation is used)
-- `transformOrderByField` (string, field to sort by)
-- `transformOrderByDesc` (boolean, descending order)
-- `transformFilterType` (string, filter type)
-- `transformFilterField` (string, field to filter on)
-- `transformFilterQuery` (string, advanced query to filter records for this view; can be set to "$paramFields.query" to provide maximum flexibility to allow the frontend to construct the query)
+- `transformOrderByField` (string, field to sort by); you can provide a field name or a param field such as "$paramFields.sortBy" to allow the client to specify the sorting order dynamically. The field name or the value passed in as the param field can be suffixed with " desc" or " asc" to control the direction; e.g. the value could be "updatedAt desc".
+- `transformOrderByDesc` (boolean, descending order; otherwise defaults to ascending)
+- `transformFilterType` (string, filter type); can be either "basic" or "advanced". If "basic" is chosen, then you will need to set the `transformFilterField`, `transformFilterOperation` and `transformFilterOperationInput` parameters below. On the other hand, if "advanced" is used, then these will be ignored and you just need to provide the query (or param field reference) via the `transformFilterQuery` field below.
+- `transformFilterField` (string, field to filter on); msut refer to a field of the model.
+- `transformFilterOperation` (string, filter comparison operator to apply to the `transformFilterField`). Any of the following operators can be used: "contains", "excludes", "=", "!=", ">", ">=", "<" or "<=".
+- `transformFilterOperationInput` (string, the parameter or value to compare the `transformFilterField` against using the `transformFilterOperation` as the comparison operator).
+- `transformFilterQuery` (string, advanced query to filter records for this view; can be set to "$paramFields.query" to provide maximum flexibility to allow the frontend to construct the query); this is a more flexible alternative to specifying the `transformFilterField`, `transformFilterOperation` and `transformFilterOperationInput` properties individually as it allows constructing more advanced queries with multiple parts.
 - `transformDistinct` (boolean, distinct results only)
 - `disableRealtime` (boolean, disable realtime updates)
 - `maxOffset` (number, max pagination offset)
-
 
 Example:
 ```bash
