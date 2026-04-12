@@ -36,6 +36,11 @@ An admin can access the following resources via the admin HTTP API:
 
 ### List All Models
 
+Available views:
+- **`accountAlphabeticalView`** — Ordered by name ascending. Params: `accountId`.
+- **`accountCustomPositionView`** — Ordered by position. Params: `accountId`.
+- **`accountModelWithNameView`** — Find by name. Params: `accountId`, `name`.
+
 ```bash
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" -XGET 'https://saasufy.com/api/Model?view=accountAlphabeticalView'
 ```
@@ -80,6 +85,11 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 Fields define the structure of data within a Model (like table columns).
 
 ### List All Fields for a Model
+
+Available views:
+- **`accountModelAlphabeticalView`** — Ordered by name ascending. Params: `accountId`, `modelId`.
+- **`accountModelCustomPositionView`** — Ordered by position. Params: `accountId`, `modelId`.
+- **`accountModelNameView`** — Find by name. Params: `accountId`, `modelId`, `name`.
 
 ```bash
 curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
@@ -179,6 +189,10 @@ Views define how to query and filter data from a Model.
 
 ### List All Views for a Model
 
+Available views:
+- **`accountModelAlphabeticalView`** — Ordered by name ascending. Params: `accountId`, `modelId`.
+- **`accountModelNameView`** — Find by name. Params: `accountId`, `modelId`, `name`.
+
 ```bash
 curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
   -XGET 'https://saasufy.com/api/ModelView?view=accountModelAlphabeticalView&viewParams[modelId]={MODEL_ID}'
@@ -246,6 +260,10 @@ Indexes improve query performance on specific fields.
 
 ### List All Indexes for a Model
 
+Available views:
+- **`accountModelAlphabeticalView`** — Ordered by name ascending. Params: `accountId`, `modelId`.
+- **`accountModelNameView`** — Find by name. Params: `accountId`, `modelId`, `name`.
+
 ```bash
 curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
   -XGET 'https://saasufy.com/api/ModelIndex?view=accountModelAlphabeticalView&viewParams[modelId]={MODEL_ID}'
@@ -299,6 +317,185 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 ```bash
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
   -XDELETE 'https://saasufy.com/api/ModelIndex/{INDEX_ID}'
+```
+
+## BlockchainAuthProvider Management
+
+BlockchainAuthProviders configure blockchain-based authentication for your service.
+
+### List All BlockchainAuthProviders
+
+Available views:
+- **`accountAlphabeticalView`** — Ordered by networkSymbol ascending. Params: `accountId`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/BlockchainAuthProvider?view=accountAlphabeticalView'
+```
+
+### Get a Specific BlockchainAuthProvider by ID
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/BlockchainAuthProvider/{PROVIDER_ID}'
+```
+
+### Create a New BlockchainAuthProvider
+
+Optional fields:
+- `networkSymbol` (string, blockchain network identifier e.g. "clsk")
+- `chainModuleName` (string, chain module name)
+- `hostname` (string, node hostname)
+- `port` (integer, node port)
+- `secure` (boolean, use secure connection)
+- `minAccountBalance` (integer, minimum account balance required for authentication)
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -XPOST 'https://saasufy.com/api/BlockchainAuthProvider' \
+  -d '{"networkSymbol": "clsk", "chainModuleName": "capitalisk_chain", "hostname": "node.example.com", "port": 8001, "secure": true, "minAccountBalance": 0}'
+```
+
+### Update a BlockchainAuthProvider
+
+Note: `networkSymbol` cannot be modified after creation.
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -XPUT 'https://saasufy.com/api/BlockchainAuthProvider/{PROVIDER_ID}' \
+  -d '{"minAccountBalance": 100}'
+```
+
+### Delete a BlockchainAuthProvider
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XDELETE 'https://saasufy.com/api/BlockchainAuthProvider/{PROVIDER_ID}'
+```
+
+## OAuthProvider Management
+
+OAuthProviders configure OAuth-based authentication for your service.
+
+### List All OAuthProviders
+
+Available views:
+- **`accountAlphabeticalView`** — Ordered by createdAt ascending. Params: `accountId`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/OAuthProvider?view=accountAlphabeticalView'
+```
+
+### Get a Specific OAuthProvider by ID
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/OAuthProvider/{PROVIDER_ID}'
+```
+
+### Create a New OAuthProvider
+
+Required fields:
+- `providerName` (string, name of the OAuth provider)
+
+Optional fields:
+- `enabled` (boolean, whether the provider is active)
+- `providerClientId` (string, OAuth client ID)
+- `providerClientSecret` (string, OAuth client secret)
+- `tokenRequestPayloadType` (string, "json" or "form")
+- `getAccessTokenURL` (string, URL to exchange code for access token)
+- `getUserInfoURL` (string, URL to fetch user info with access token)
+- `providerClientIdField` (string, field name for client ID in token request)
+- `providerClientSecretField` (string, field name for client secret in token request)
+- `accessTokenField` (string, field name for access token in response)
+- `accountIdField` (string, field name for account ID in user info response)
+- `usernameField` (string, field name for username in user info response)
+- `emailField` (string, field name for email in user info response)
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -XPOST 'https://saasufy.com/api/OAuthProvider' \
+  -d '{"providerName": "github", "enabled": true, "providerClientId": "abc123", "providerClientSecret": "secret456", "getAccessTokenURL": "https://github.com/login/oauth/access_token", "getUserInfoURL": "https://api.github.com/user"}'
+```
+
+### Update an OAuthProvider
+
+Note: `providerName` cannot be modified after creation.
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -XPUT 'https://saasufy.com/api/OAuthProvider/{PROVIDER_ID}' \
+  -d '{"enabled": false}'
+```
+
+### Delete an OAuthProvider
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XDELETE 'https://saasufy.com/api/OAuthProvider/{PROVIDER_ID}'
+```
+
+## APICredential Management
+
+APICredentials manage API keys for programmatic access to your service.
+
+### List All APICredentials
+
+Available views:
+- **`accountLatestView`** — Ordered by createdAt descending. Params: `accountId`.
+- **`accountSearchView`** — Search by name. Params: `accountId`, `nameText`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/APICredential?view=accountLatestView'
+```
+
+### Get a Specific APICredential by ID
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/APICredential/{CREDENTIAL_ID}'
+```
+
+### Create a New APICredential
+
+Required fields:
+- `name` (string, credential name)
+- `secretKeyHash` (string, hashed secret key)
+
+Optional fields:
+- `serviceAccountId` (UUID, associated service account)
+- `allowAdminRead` (boolean, allow admin read access)
+- `allowAdminWrite` (boolean, allow admin write access)
+- `allowRead` (boolean, allow read access)
+- `allowWrite` (boolean, allow write access)
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -XPOST 'https://saasufy.com/api/APICredential' \
+  -d '{"name": "my-api-key", "secretKeyHash": "{HASH}", "allowAdminRead": true, "allowAdminWrite": true}'
+```
+
+### Update an APICredential
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -XPUT 'https://saasufy.com/api/APICredential/{CREDENTIAL_ID}' \
+  -d '{"allowRead": true, "allowWrite": false}'
+```
+
+### Delete an APICredential
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XDELETE 'https://saasufy.com/api/APICredential/{CREDENTIAL_ID}'
 ```
 
 ## Deploy Schema Changes
