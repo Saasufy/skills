@@ -33,6 +33,9 @@ An admin can access the following resources via the admin HTTP API:
 - BlockchainAuthProvider
 - OAuthProvider
 - APICredential
+- Usage
+- ServiceStats
+- ServiceAggregatedStats
 
 ### List All Models
 
@@ -497,6 +500,108 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
   -XDELETE 'https://saasufy.com/api/APICredential/{CREDENTIAL_ID}'
 ```
+
+## Usage Management
+
+Usage records track per-account API consumption and billing periods. These records are generated automatically by the system and are read-only.
+
+### List Usage Records
+
+Available views:
+- **`accountLatestView`** — Ordered by createdAt descending. Params: `accountId`.
+- **`accountLatestClosedUnpaidView`** — Closed usage periods that have not been paid yet. Params: `accountId`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/Usage?view=accountLatestView&viewParams[accountId]={ACCOUNT_ID}'
+```
+
+### Get a Specific Usage Record by ID
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/Usage/{USAGE_ID}'
+```
+
+### Usage Fields
+
+Read-only fields returned on Usage records:
+- `id` (UUID)
+- `accountId` (UUID)
+- `adminOpCount`, `adminTransmitCount`, `adminInvokeCount`, `adminPublishInCount`, `adminPublishOutCount`, `adminSubscribeCount`, `adminAuthenticateCount`, `adminHTTPRequestCount`, `adminRequestProcessingTime` (numbers, admin API usage counters)
+- `serviceOpCount`, `serviceTransmitCount`, `serviceInvokeCount`, `servicePublishInCount`, `servicePublishOutCount`, `serviceSubscribeCount`, `serviceAuthenticateCount`, `serviceHTTPRequestCount`, `serviceRequestProcessingTime` (numbers, service API usage counters)
+- `serviceBytesWritten`, `serviceBytesRead`, `serviceBytesStored` (numbers, storage/IO usage)
+- `paidAt` (number, timestamp when the usage period was paid; `-1` if unpaid)
+- `closedAt` (number, timestamp when the usage period was closed; `-1` if still open)
+- `createdAt`, `updatedAt` (numbers, timestamps)
+
+Note: Usage records cannot be created, updated, or deleted via the Admin HTTP API.
+
+## ServiceStats Management
+
+ServiceStats records store short-interval (minute-level) service usage statistics. These records are generated automatically by the system and are read-only.
+
+### List ServiceStats Records
+
+Available views:
+- **`accountLatestView`** — Ordered by createdAt descending. Params: `accountId`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceStats?view=accountLatestView&viewParams[accountId]={ACCOUNT_ID}'
+```
+
+### Get a Specific ServiceStats Record by ID
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceStats/{STATS_ID}'
+```
+
+### ServiceStats Fields
+
+Read-only fields returned on ServiceStats records:
+- `id` (UUID)
+- `accountId` (UUID)
+- `serviceOpCount`, `serviceTransmitCount`, `serviceInvokeCount`, `servicePublishInCount`, `servicePublishOutCount`, `serviceSubscribeCount`, `serviceAuthenticateCount`, `serviceHTTPRequestCount`, `serviceRequestProcessingTime` (numbers, service API usage counters)
+- `serviceBytesWritten`, `serviceBytesRead`, `serviceBytesStored` (numbers, storage/IO usage)
+- `processedForDay` (boolean, whether this record has already been rolled up into a daily ServiceAggregatedStats record)
+- `createdAt`, `updatedAt` (numbers, timestamps)
+
+Note: ServiceStats records cannot be created, updated, or deleted via the Admin HTTP API.
+
+## ServiceAggregatedStats Management
+
+ServiceAggregatedStats records store longer-interval (e.g. daily) aggregated service usage statistics, rolled up from ServiceStats records. These records are generated automatically by the system and are read-only.
+
+### List ServiceAggregatedStats Records
+
+Available views:
+- **`accountLatestView`** — Ordered by createdAt descending. Params: `accountId`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceAggregatedStats?view=accountLatestView&viewParams[accountId]={ACCOUNT_ID}'
+```
+
+### Get a Specific ServiceAggregatedStats Record by ID
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceAggregatedStats/{STATS_ID}'
+```
+
+### ServiceAggregatedStats Fields
+
+Read-only fields returned on ServiceAggregatedStats records:
+- `id` (UUID)
+- `type` (string, aggregation bucket type; currently `"daily"`)
+- `accountId` (UUID)
+- `serviceOpCount`, `serviceTransmitCount`, `serviceInvokeCount`, `servicePublishInCount`, `servicePublishOutCount`, `serviceSubscribeCount`, `serviceAuthenticateCount`, `serviceHTTPRequestCount`, `serviceRequestProcessingTime` (numbers, service API usage counters)
+- `serviceBytesWritten`, `serviceBytesRead`, `serviceBytesStored` (numbers, storage/IO usage)
+- `createdAt`, `updatedAt` (numbers, timestamps)
+
+Note: ServiceAggregatedStats records cannot be created, updated, or deleted via the Admin HTTP API.
 
 ## Deploy Schema Changes
 
