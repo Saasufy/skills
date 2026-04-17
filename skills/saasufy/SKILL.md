@@ -11,7 +11,7 @@ description: This skill helps you to setup, build, deploy and test your Saasufy 
 
 ## Schema Management
 
-[schema-management.md](schema-management.md): An important guide which explains how to create, read, update and delete records to define the data schema of a Saasufy service via the Admin HTTP API. It provides exact curl commands for managing the schema. The schema is also where authorization/access-control rules are defined so it's an integral part of enforcing security constraints.
+[schema-management.md](schema-management.md): An important guide which explains how to create, read, update and delete records to define the data schema of a Saasufy service via the Admin HTTP API. It provides exact curl commands for managing the schema. The schema is also where authorization/access-control rules are defined so it's an integral part of enforcing security constraints. This guide also describes the different kinds of data models which Saasufy exposes to admins.
 
 ## Data Management
 
