@@ -94,3 +94,7 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 ## Saasufy WebSocket API
 
 [websocket-api.md](websocket-api.md): This guide describes how to interact with Saasufy via WebSockets directly using the SocketCluster client. It also explains how Saasufy's pub/sub mechanism works and how to subscribe to realtime changes using code. This API is intended to be used as a last-resort where declarative components are unsuitable. It's recommended to also check out the [utility-functions.md](utility-functions.md) guide as it provides more user-friendly functions which wrap the client socket instance.
+
+# Saasufy Statistics
+
+Saasufy keeps track of statistics by the minute and by the hour; they are exposed via the `ServiceStats` and the `ServiceAggregatedStats` models respectively. See the [schema-management.md](schema-management.md) guide for details about the schema and instructions explaining how to interact with those models.
