@@ -199,6 +199,12 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
   }'
 ```
 
+## Group-Based Access Control
+
+For multi-tenant applications where records must be shared between a defined set of users (teams, organizations, workspaces, projects), Saasufy provides built-in `Group` and `GroupMembership` collections that integrate with the access control system described above. These collections automatically attach `groupOwnerships` and `groupMemberships` fields to each user's JWT, which can then be referenced via `accessTokenAuthField` to enforce group-scoped permissions on any other model. Note that this is a more complicated mechanism and so you should use the simpler account-based approach described in this guide where possible. For simple scenarios with one or a small number of resource owners, the account-based approach may suffice.
+
+See [access-control-groups.md](access-control-groups.md) for the full guide on setting up group-based access control, including the built-in service-level rules that enforce owner-only management of group memberships.
+
 ## Common Access Control Patterns
 
 ### Pattern 1: Public Read, Restricted Write

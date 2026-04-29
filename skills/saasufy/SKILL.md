@@ -70,6 +70,7 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 ## Authorization/Access Control
 
 [access-control.md](access-control.md): Provides detailed information about how to create access control rules in Saasufy via the Admin HTTP API.
+[access-control-groups.md](access-control-groups.md): Explains how to use the built-in `Group` and `GroupMembership` collections to implement multi-tenant, group-scoped access control where group owners can manage memberships and shared records.
 
 ## Debugging and Troubleshooting
 
