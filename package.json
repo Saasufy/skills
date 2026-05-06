@@ -1,0 +1,31 @@
+{
+  "name": "saasufy-agent-skills",
+  "version": "1.12.0",
+  "description": "Saasufy skills for AI",
+  "author": "Jonathan Gros-Dubois <jon@socketcluster.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Saasufy/skills.git"
+  },
+  "homepage": "https://github.com/Saasufy/skills",
+  "bugs": {
+    "url": "https://github.com/Saasufy/skills/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi-skill",
+    "claude-code",
+    "saasufy",
+    "skills"
+  ],
+  "files": [
+    "skills",
+    "README.md",
+    ".claude-plugin/marketplace.json"
+  ],
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
+  }
+}
