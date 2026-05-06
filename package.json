@@ -1,6 +1,6 @@
 {
   "name": "saasufy-agent-skills",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Saasufy skills for AI",
   "author": "Jonathan Gros-Dubois <jon@socketcluster.io>",
   "repository": {
@@ -21,11 +21,13 @@
   "files": [
     "skills",
     "README.md",
+    "saasufy-graphic.png",
     ".claude-plugin/marketplace.json"
   ],
   "pi": {
     "skills": [
       "./skills"
-    ]
+    ],
+    "image": "https://raw.githubusercontent.com/Saasufy/skills/main/saasufy-graphic.png"
   }
 }
