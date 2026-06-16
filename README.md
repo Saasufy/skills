@@ -1,8 +1,7 @@
 # Skills
 Saasufy AI skills for Claude Code and pi.
 
-Saasufy is a no-code, real-time data store and application-creation platform, packaged as a tool for your AI agent.
-Learn more about Saasufy at [saasufy.com](https://saasufy.com/).
+Saasufy is a no-code/low-code, real-time data store and application-creation platform, packaged as a tool for your AI agent. Optimized for vibe-coding security and maintainability. Learn more about Saasufy at [saasufy.com](https://saasufy.com/).
 
 ## Installing with pi
 

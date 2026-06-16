@@ -34,8 +34,8 @@ An admin can access the following resources via the admin HTTP API:
 - OAuthProvider
 - APICredential
 - Usage
-- ServiceStats
 - ServiceAggregatedStats
+- ServiceAggregatedModelAnalytics
 
 ### List All Models
 
@@ -537,42 +537,9 @@ Read-only fields returned on Usage records:
 
 Note: Usage records cannot be created, updated, or deleted via the Admin HTTP API.
 
-## ServiceStats Management
-
-ServiceStats records store short-interval (minute-level) service usage statistics. These records are generated automatically by the system and are read-only.
-
-### List ServiceStats Records
-
-Available views:
-- **`accountLatestView`** — Ordered by createdAt descending. Params: `accountId`.
-
-```bash
-curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
-  -XGET 'https://saasufy.com/api/ServiceStats?view=accountLatestView&viewParams[accountId]={ACCOUNT_ID}'
-```
-
-### Get a Specific ServiceStats Record by ID
-
-```bash
-curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
-  -XGET 'https://saasufy.com/api/ServiceStats/{STATS_ID}'
-```
-
-### ServiceStats Fields
-
-Read-only fields returned on ServiceStats records:
-- `id` (UUID)
-- `accountId` (UUID)
-- `serviceOpCount`, `serviceTransmitCount`, `serviceInvokeCount`, `servicePublishInCount`, `servicePublishOutCount`, `serviceSubscribeCount`, `serviceAuthenticateCount`, `serviceHTTPRequestCount`, `serviceRequestProcessingTime` (numbers, service API usage counters)
-- `serviceBytesWritten`, `serviceBytesRead`, `serviceBytesStored` (numbers, storage/IO usage)
-- `processedForDay` (boolean, whether this record has already been rolled up into a daily ServiceAggregatedStats record)
-- `createdAt`, `updatedAt` (numbers, timestamps)
-
-Note: ServiceStats records cannot be created, updated, or deleted via the Admin HTTP API.
-
 ## ServiceAggregatedStats Management
 
-ServiceAggregatedStats records store longer-interval (e.g. daily) aggregated service usage statistics, rolled up from ServiceStats records. These records are generated automatically by the system and are read-only.
+ServiceAggregatedStats records store aggregated service usage statistics (interval or daily). These records are generated automatically by the system and are read-only.
 
 ### List ServiceAggregatedStats Records
 
@@ -595,13 +562,56 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 
 Read-only fields returned on ServiceAggregatedStats records:
 - `id` (UUID)
-- `type` (string, aggregation bucket type; currently `"daily"`)
+- `type` (string, aggregation bucket type; can be `"interval"` or `"daily"`)
 - `accountId` (UUID)
 - `serviceOpCount`, `serviceTransmitCount`, `serviceInvokeCount`, `servicePublishInCount`, `servicePublishOutCount`, `serviceSubscribeCount`, `serviceAuthenticateCount`, `serviceHTTPRequestCount`, `serviceRequestProcessingTime` (numbers, service API usage counters)
 - `serviceBytesWritten`, `serviceBytesRead`, `serviceBytesStored` (numbers, storage/IO usage)
 - `createdAt`, `updatedAt` (numbers, timestamps)
 
 Note: ServiceAggregatedStats records cannot be created, updated, or deleted via the Admin HTTP API.
+
+## ServiceAggregatedModelAnalytics Management
+
+ServiceAggregatedModelAnalytics records store aggregated per-model CRUD analytics (interval or daily). These records are generated automatically by the system and are read-only.
+
+### List ServiceAggregatedModelAnalytics Records
+
+Available views:
+- **`accountLatestView`** — Latest records across all models, ordered by timestamp descending. Params: `accountId`.
+- **`accountLatestIntervalModelView`** — Latest `interval`-type records for a specific model, ordered by timestamp descending. Params: `accountId`, `modelName`.
+- **`accountLatestDailyModelView`** — Latest `daily`-type records for a specific model, ordered by timestamp descending. Params: `accountId`, `modelName`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceAggregatedModelAnalytics?view=accountLatestView&viewParams[accountId]={ACCOUNT_ID}'
+```
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceAggregatedModelAnalytics?view=accountLatestIntervalModelView&viewParams[accountId]={ACCOUNT_ID}&viewParams[modelName]={MODEL_NAME}'
+```
+
+### Get a Specific ServiceAggregatedModelAnalytics Record by ID
+
+```bash
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceAggregatedModelAnalytics/{ANALYTICS_ID}'
+```
+
+### ServiceAggregatedModelAnalytics Fields
+
+Read-only fields returned on ServiceAggregatedModelAnalytics records:
+- `id` (UUID)
+- `type` (string, aggregation bucket type; can be `"interval"` or `"daily"`)
+- `accountId` (UUID)
+- `modelName` (string, name of the model the analytics relate to)
+- `createCount`, `readCount`, `updateCount`, `deleteCount` (numbers, per-model CRUD operation counters)
+- `fieldInfo` (string, serialized per-field analytics information)
+- `viewInfo` (string, serialized per-view analytics information)
+- `timestamp` (number, timestamp of the aggregation bucket)
+- `createdAt`, `updatedAt` (numbers, timestamps)
+
+Note: ServiceAggregatedModelAnalytics records cannot be created, updated, or deleted via the Admin HTTP API.
 
 ## Deploy Schema Changes
 
