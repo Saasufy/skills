@@ -23,7 +23,7 @@ This important section contains documentation for how to use frontend Saasufy co
 
 ### Application State Management
 
-- [app-router.md](app-router.md): Shows how to handle frontend routing logic to render different pages and sections within the app based onthe URL.
+- [app-router.md](app-router.md): Shows how to handle frontend routing logic to render different pages and sections within the app based on the URL.
 - [socket-provider.md](socket-provider.md): Shows how to setup the app to allow components to connect with the Saasufy backend for synching.
 
 ### Handling a Collection of Records
