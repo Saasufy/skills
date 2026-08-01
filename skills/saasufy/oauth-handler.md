@@ -28,3 +28,7 @@ When using an OAuth provider, the callback URL which you register with the provi
 - `state-param-name`: The name of the query parameter which holds the `state` as provided by the OAuth provider within the OAuth callback URL. Defaults to `state`.
 - `auth-timeout`: The number of milliseconds to wait for authentication to complete before timing out. Defaults to 10000 (10 seconds).
 - `use-session-storage`: By default, the state is retrieved from localStorage. If this property is set, then the state will be retrieved from sessionStorage instead. If set, this attribute should also be set on the related `oauth-link` component.
+
+Some OAuth providers, including the shared Saasufy Keycloak instance, may require you to specify the `redirect-uri` attribute; in this case, it should match the allowed `redirectURI` which was specified on the `OAuthProvider` record and/or on the OAuth provider's service.
+
+See the `OAuth` section of the [access-control.md](access-control.md) guide for more information about integrating with the shared/hosted Saasufy Keycloak instance. This is the simplest way to support email signups within your application.
