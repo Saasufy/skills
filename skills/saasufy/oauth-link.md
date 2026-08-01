@@ -30,3 +30,5 @@ A link to initiate an OAuth flow to authenticate a user as part of log in. Can s
 - `state-size`: This allows you to control the size (in bytes) of the random state string which is passed to the OAuth provider as part of the OAuth flow. Defaults to 20.
 - `state-storage-key`: The state string is stored in the browser's `sessionStorage` under this key. Defaults to `oauth.state`. It must match the value provided to the `oauth-handler` component at the end of the OAuth flow.
 - `use-session-storage`: By default, the state is stored inside localStorage. If this property is set, then the state will be stored inside sessionStorage instead. If set, this attribute should also be set on the related `oauth-handler` component.
+
+If linking to a Keycloak instance as an OAuth provider, you can add a `&prompt=create` query parameter to the authorize URL to take the user to the registration flow (instead of the login flow). The Keycloak instance needs to support user registration; which is the case for the shared Saasufy Keycloak instance. The `oauth-link` component can therefore be used either for registration or log in.
