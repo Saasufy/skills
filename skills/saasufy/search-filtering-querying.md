@@ -1,4 +1,6 @@
-# Overview
+# Search Filtering and Querying
+
+## Overview
 
 Queries are passed to Saasufy views via `viewParams`.
 For example, the `collection-viewer` element has a `collection-view-params` attribute which represents a comma-separated list of parameters with their values. A query should be passed by itself or alongside other parameters like this: `companyEmployeeCountLow=10,query='companyName contains Micro ~AND~ yearFounded < 2000'`. Any parameter can potentially hold a query; the correct parameter to use depends how the view is defined within Saasufy.
@@ -28,9 +30,9 @@ For example, consider this sample `ModelView` which combines indexed filtering w
 }
 ```
 
-# Query Format
+## Query Format
 
-## Basic Structure
+### Basic Structure
 
 The query follows the format:
 
@@ -49,7 +51,7 @@ companyName contains (?i)Micro ~AND~ yearFounded < 2000
 
 Supported boolean operators are `~AND~` and `~OR~` as well as variants which can be used to adjust priority (which act like brackets).
 
-## Complex Boolean Expressions
+### Complex Boolean Expressions
 
 It is possible to construct complex boolean queries by adding a number within the comparison operator in the form `~ANDx~` or `~ORx~`; the greater the `x`, the higher the priority. If no `x` is specified, then the priority is treated as `0`.
 

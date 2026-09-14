@@ -88,6 +88,10 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 [search-filtering-querying.md](search-filtering-querying.md): A guide for leveraging the advanced search and filtering capabilities of Saasufy.
 
+## Data Aggregation Pipelines
+
+[data-aggregation-pipelines.md](data-aggregation-pipelines.md): A guide for creating aggregation pipelines which can be used to automatically populate a target collection in realtime by grouping and/or filtering records from a source collection. It can be used to implement features such as high-score tables, time-series running averages as well as history tables (to keep track of changes made to a source collection and its records over time). This feature is designed to scale linearly across available workers.
+
 ## Utility Functions
 
 [utility-functions.md](utility-functions.md): Describes utility functions which are provided by Saasufy to help manage data with JavaScript. It provides utility functions for template rendering as well as utility functions for fetching filtered collections in various ways; for example with pagination, filtering etc... The JavaScript utility functions are intended to be used as a last-resort for fetching data for frontend processing. In the vast majority of cases, for displaying filtered views, the `collection-viewer` component should be used instead since those utility functions do not provide realtime updates.
