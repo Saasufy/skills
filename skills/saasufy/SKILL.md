@@ -13,6 +13,10 @@ description: This skill helps you to setup, build, deploy and test your Saasufy 
 
 [schema-management.md](schema-management.md): An important guide which explains how to create, read, update and delete records to define the data schema of a Saasufy service via the Admin HTTP API. It provides exact curl commands for managing the schema. The schema is also where authorization/access-control rules are defined so it's an integral part of enforcing security constraints. This guide also describes the different kinds of data models which Saasufy exposes to admins.
 
+## Views and Indexing
+
+[views-and-indexing.md](views-and-indexing.md): An essential guide to read before creating any `ModelView` or `ModelIndex`, especially when using a compound index or the `between` index operation. It explains how a view resolves a query in two phases, how Saasufy names indexes, which indexes it creates for you and which you need to declare yourself, and how to bind index operation inputs correctly.
+
 ## Data Management
 
 [data-management.md](data-management.md): A guide which explains how to create, read, update and delete records within a model collection in the user's service (once deployed). This can be useful for adding some dummy data into the collections to aid with testing. It provides curl commands for managing data within any collection.
@@ -86,7 +90,7 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 ## Search Filtering and Querying
 
-[search-filtering-querying.md](search-filtering-querying.md): A guide for leveraging the advanced search and filtering capabilities of Saasufy.
+[search-filtering-querying.md](search-filtering-querying.md): A guide for leveraging the advanced search and filtering capabilities of Saasufy. Covers the query syntax used in the second phase of filtering, along with range queries over compound indexes; it should be read together with [views-and-indexing.md](views-and-indexing.md), which covers the indexed first phase.
 
 ## Data Aggregation Pipelines
 

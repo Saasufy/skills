@@ -114,6 +114,16 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
   -d '{"name": "Laptop", "price": 999.99, "description": "High-performance laptop", "inStock": true}'
 ```
 
+#### `multi` Fields
+
+Over the HTTP API, the value of a `multi` field must be a comma-separated string, not a JSON array; posting an array fails with *"Value must be a string"*:
+
+```bash
+-d '{"name": "Laptop", "tags": "portable,electronics"}'
+```
+
+Because of this encoding, an individual value within a `multi` field cannot contain a comma. Note that `multi` fields are indexed element-wise, so an `equals` lookup against a single element works well; see [views-and-indexing.md](views-and-indexing.md).
+
 ### Update a Record
 
 Only include the fields you want to update. Other fields will remain unchanged.

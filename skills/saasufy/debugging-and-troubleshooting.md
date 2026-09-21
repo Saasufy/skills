@@ -177,11 +177,35 @@ You can filter based on an account ID by specifying an `accountId` property to t
 There may not be any data for that view which matches the specified filters.
 Otherwise, check that the view is defined correctly. See the `Create a New View` section of the [schema-management.md](schema-management.md) guide for details and ensure that it's matching the `paramFields` which are passed to the view against matching model fields. If using advanced queries, check the [search-filtering-querying.md](search-filtering-querying.md) guide.
 
-### No permission to read
+If the view uses `transformIndex`, check the index phase before the filter query — the index determines the set of records the view can return. See [views-and-indexing.md](views-and-indexing.md) for details on each of the following:
 
-If you see an error like "You do not have permission to perform the ... operation on the ... field", it means that the current client doesn't have the right to access that resource. Saasufy enforces access control at the field level so you may get multiple such errors; one for each field you try to read. To make the error go away, check that your view is defined correctly and that it filters out records which belong to other accounts. You should be careful about setting the read access to "allow" as it will allow anyone to read the resource which may be undesirable.
+1. **A compound `between` which doesn't bind every index component.** Each of `transformIndexOperationInputA` and `transformIndexOperationInputB` specifies a complete index key, so for an index over `(clinicianId, startAt)` both must supply a value for every component, comma-separated in index order:
 
-### Views are showing empty data while authenticated
+   ```jsonc
+   "transformIndexOperationInputA": "$paramFields.clinicianId,$paramFields.fromAt",
+   "transformIndexOperationInputB": "$paramFields.clinicianId,$paramFields.toAt"
+   ```
 
-Check that there is data associated with your specific `accountId` within the specified collection/view. If some of the data was created via the Saasufy HTTP API, check that the account ID associated with your API credential is as expected. You can associate an HTTP API credential with an account ID of your choice. See the `Impersonating an account via HTTP API` section of the [data-management.md](data-management.md) guide for details.
+   To confirm this is the cause, query the view with a range which cannot exclude anything (e.g. `fromAt=0`, `toAt=9999999999999`) and a known-good value for each leading component.
 
+2. **A `transformIndex` pointing at a placeholder index.** Index names are assigned by Saasufy from the indexed fields, so a custom name supplied at creation is replaced on deployment and any view referencing it is left dangling; Saasufy then creates an index over a field of that name, which matches nothing if no such field exists. List the indexes and check that each one's `fields` names real fields on the model:
+
+   ```bash
+   SAASUFY_API_KEY=$(cat .saasufy-api-key)
+   curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+     -XGET 'https://saasufy.com/api/ModelIndex?view=accountModelAlphabeticalView&viewParams[modelId]={MODEL_ID}'
+   ```
+
+   An entry such as `{name: "clinicianStartIndex", fields: "clinicianStartIndex"}` is a placeholder. Delete it, create the intended compound index with `fields` only, and point `transformIndex` at the canonical name (`clinicianIdStartAt`).
+
+3. **A `between` boundary landing on the upper bound.** `between` is half-open — `[from, to)` — so a record whose key equals `to` is excluded. Pass `to = end + 1` for an inclusive upper bound.
+
+### View returns too many records (including other accounts' records)
+
+A param declared in `paramFields` only filters if it is consumed — by an index input (`transformIndexOperationInputA`/`InputB`) or by a reference inside `transformFilterQuery` or `transformFilterOperationInput`. Matching the name of a model field is not sufficient.
+
+Check that each name in `paramFields` appears in the view's index inputs or filter query. Where a param scopes results to a tenant, owner or account, prefer binding it to an index component. See [views-and-indexing.md](views-and-indexing.md).
+
+### Schema tooling operates on only part of a model
+
+Admin listing endpoints return a limited page of records (10 by default), so tooling which enumerates a model's fields, indexes or views needs to page through the results. A symptom is a bulk operation which appears to succeed but only affects the first handful of records alphabetically — for example access rules landing on only the first 10 fields of a 26-field model. See the `Paginating Listing Endpoints` section of the [schema-management.md](schema-management.md) guide.

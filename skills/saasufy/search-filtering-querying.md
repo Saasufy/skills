@@ -11,6 +11,8 @@ To access the `query` property of the `viewParam` as shown in the earlier exampl
 The query is applied during the second phase of filtering and can be passed in along with other `viewParams`.
 Sometimes, in order to get optimal performance with indexed filtering, it may be useful to also set the `transformIndex`, `transformIndexOperation` and `transformIndexOperationInputA` using other `$paramFields` passed into the view through `viewParams`.
 
+Indexed filtering is the first of the two phases: Saasufy scans the index named by `transformIndex`, then applies the query to whatever that scan produced. The index therefore determines the set of records the query can filter. See [views-and-indexing.md](views-and-indexing.md) for how indexes are defined and referenced.
+
 For example, consider this sample `ModelView` which combines indexed filtering with a flexible query:
 
 ```json
@@ -62,3 +64,22 @@ yearFounded <= 2000 ~AND~ companyName contains (?i)Micro ~OR1~ companyName conta
 ```
 
 This query would only include companies founded on or before the year 2000 and whose companyName starts with either 'Micro' or 'General Moto' (case insensitive).
+
+## Range Queries and Compound Indexes
+
+Range filtering is best done in the first phase via `transformIndexOperation: "between"` so that it can use an index. Index creation and naming are covered in [views-and-indexing.md](views-and-indexing.md); the points below are the ones which most affect querying.
+
+**Index operation inputs take complete index keys.** `transformIndexOperationInputA` and `transformIndexOperationInputB` are not simply "the range start" and "the range end". A `between` scan runs from one full index key to another, so for an index over `(clinicianId, startAt)` it runs from `(clinicianId, fromAt)` to `(clinicianId, toAt)` — the leading component is repeated in both bounds:
+
+```jsonc
+"transformIndex": "clinicianIdStartAt",
+"transformIndexOperation": "between",
+"transformIndexOperationInputA": "$paramFields.clinicianId,$paramFields.fromAt",
+"transformIndexOperationInputB": "$paramFields.clinicianId,$paramFields.toAt"
+```
+
+Each input must supply a value for every component of the index, comma-separated in index order. Supplying fewer values than the index has components returns no results.
+
+**`between` is half-open: `[from, to)`.** A record whose key equals `from` is included; one whose key equals `to` is excluded. Pass `to = end + 1` where an inclusive upper bound is intended.
+
+**Params only filter when consumed.** Declaring a name in `paramFields` has no filtering effect on its own, even when it matches a field on the model; it filters only if consumed by an index input or referenced in `transformFilterQuery` or `transformFilterOperationInput`. A view declaring `paramFields: "clinicianId,fromAt,toAt"` with `transformIndex: "startAt"` returns every clinician's rows, because nothing consumes `clinicianId`.

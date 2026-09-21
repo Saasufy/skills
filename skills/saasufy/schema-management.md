@@ -21,6 +21,19 @@ SAASUFY_API_KEY=$(cat .saasufy-api-key)
 
 All Admin HTTP API endpoints use: `https://saasufy.com/api/`
 
+## Paginating Listing Endpoints
+
+Listing endpoints return one page of records at a time — 10 by default. Tooling which enumerates a model's fields, views or indexes needs to page through the results, or it will act on a partial schema; a 26-field model, for example, would otherwise expose only its first 10 fields alphabetically.
+
+Listing endpoints accept `pageSize` and `offset` query parameters, which work the same way as in the WebSocket CRUD read operation (see [websocket-api.md](websocket-api.md)):
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ModelField?view=accountModelAlphabeticalView&viewParams[modelId]={MODEL_ID}&pageSize=100&offset=0'
+```
+
+If a response contains exactly the page-size number of records, request the next page. When paging by `offset`, check that each page contains different records from the previous one before continuing.
+
 ## Model Management
 
 Models represent collections (like database tables) in your Saasufy service.
@@ -215,13 +228,14 @@ Required fields:
 - `name` (string, view name)
 
 Optional fields for configuring the view:
-- `paramFields` (string, comma-separated field names used as parameters); aim to make them match field names on the model if there is a corresponding field.
+- `paramFields` (string, comma-separated field names used as parameters); aim to make them match field names on the model if there is a corresponding field. Note that a param only filters if it is consumed — by `transformIndexOperationInputA`/`transformIndexOperationInputB`, by `transformFilterQuery`, or by `transformFilterOperationInput`; matching the name of a model field is not sufficient on its own.
 - `primaryFields` (string, comma-separated primary index fields); can reference any field on the model.
 - `affectingFields` (string, fields that affect the view results); not needed most of the time but can be used to ensure that changing a specific non-primary field will trigger realtime notifications for that view.
-- `transformIndex` (string, index to use for the transform); can reference any field on the model (or an index); if an index doesn't yet exist on a field; it will be created by Saasufy automatically on the next deployment.
+- `transformIndex` (string, index to use for the transform); can reference any field on the model (or an index); if an index doesn't yet exist on a **single field**, it will be created by Saasufy automatically on the next deployment. Compound indexes are not inferred this way — create the `ModelIndex` first and reference it by its canonical name. See [views-and-indexing.md](views-and-indexing.md).
 - `transformIndexOperation` (string, can be "equals" or "between")
-- `transformIndexOperationInputA`: (string, typically referencing a viewParam passed into the view from the frontend; for example "$paramFields.companyEmployeeCountLow")
-- `transformIndexOperationInputB`: (string, represents the second operand if the "between" index operation is used)
+- `transformIndexOperationInputA`: (string, the index key to scan from; typically referencing a viewParam passed into the view from the frontend, for example "$paramFields.companyEmployeeCountLow")
+- `transformIndexOperationInputB`: (string, the index key to scan to, if the "between" index operation is used)
+- For a compound index, each of `transformIndexOperationInputA` and `transformIndexOperationInputB` specifies a *complete index key*, so each must supply a value for every component, comma-separated in index order — e.g. `"$paramFields.clinicianId,$paramFields.fromAt"` and `"$paramFields.clinicianId,$paramFields.toAt"` for an index over `clinicianId,startAt`. Note also that `between` is half-open (`[from, to)`), so a record whose key equals the upper bound is excluded.
 - `transformOrderByField` (string, field to sort by); you can provide a field name or a param field such as "$paramFields.sortBy" to allow the client to specify the sorting order dynamically. The field name or the value passed in as the param field can be suffixed with " desc" or " asc" to control the direction; e.g. the value could be "updatedAt desc".
 - `transformOrderByDesc` (boolean, descending order; otherwise defaults to ascending)
 - `transformFilterType` (string, filter type); can be either "basic" or "advanced". If "basic" is chosen, then you will need to set the `transformFilterField`, `transformFilterOperation` and `transformFilterOperationInput` parameters below. On the other hand, if "advanced" is used, then these will be ignored and you just need to provide the query (or param field reference) via the `transformFilterQuery` field below.
@@ -259,7 +273,11 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 
 ## ModelIndex Management
 
-Indexes improve query performance on specific fields.
+Indexes improve query performance on specific fields. They also determine what a `ModelView` can return, since a view's `transformIndex` names the index it scans. See [views-and-indexing.md](views-and-indexing.md) for how views use them.
+
+**Index names are assigned by Saasufy**, derived from `fields` in order, camelCased; a `name` supplied at creation is replaced on deployment (`fields: "status,priceAmount"` → `statusPriceAmount`). Refer to an index by this canonical name. If a view's `transformIndex` names neither an existing field nor an existing index, Saasufy creates a placeholder index over a field of that name; where no such field exists, the index matches nothing and the view returns no results.
+
+**Declare compound indexes only.** For a single-field `transformIndex`, name the field in the view and Saasufy creates the index on deploy. It also creates indexes for `multi` fields automatically.
 
 ### List All Indexes for a Model
 
@@ -283,28 +301,24 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 
 Required fields:
 - `modelId` (UUID of the parent model)
-- `name` (string, index name)
-- `fields` (string, comma-separated field names to index)
+- `fields` (string, comma-separated field names to index, in order)
 
 Optional fields:
 - `format` (string, index format)
 - `maxCardinality` (integer, max cardinality for the index)
+- `name` (string); **do not set this.** Saasufy derives the canonical name from `fields` and overwrites whatever you supply on deployment.
 
-Example:
+Compound index — specify `fields` only:
 ```bash
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
   -H "Content-Type: application/json" \
   -XPOST 'https://saasufy.com/api/ModelIndex' \
-  -d '{"modelId": "{MODEL_ID}", "name": "emailIndex", "fields": "email"}'
+  -d '{"modelId": "{MODEL_ID}", "fields": "status,createdAt"}'
 ```
 
-Compound index:
-```bash
-curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
-  -H "Content-Type: application/json" \
-  -XPOST 'https://saasufy.com/api/ModelIndex' \
-  -d '{"modelId": "{MODEL_ID}", "name": "statusDateIndex", "fields": "status,createdAt"}'
-```
+After deployment this index is named `statusCreatedAt`, and that is the name a view's `transformIndex` should use. You can either predict the canonical name (first field as-is, each subsequent field appended with its first letter capitalised) or deploy and read the assigned name back before setting `transformIndex`.
+
+For a single-field index, point the view's `transformIndex` at the field name instead and Saasufy will create the index on the next deployment.
 
 ### Update an Index
 
@@ -629,6 +643,8 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" -XPOST 'https://saasufy.com/api/
 4. **When creating fields**, consider the data type and constraints carefully
 5. **Views and Indexes** should be created after the Model and Fields are defined
 6. After making schema changes, you must deploy/start the service for the changes to take effect.
+7. **Index names are assigned by Saasufy** from the indexed fields; declare single-field indexes via a view's `transformIndex` and create `ModelIndex` records only for compound indexes. See [views-and-indexing.md](views-and-indexing.md).
+8. **Listing endpoints paginate** (10 records by default) — page through them before acting on the results.
 
 ## Common Workflows
 
@@ -636,13 +652,14 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" -XPOST 'https://saasufy.com/api/
 
 1. Create the Model
 2. Create Fields for the Model
-3. Create Views for querying the Model
-4. Create Indexes for performance
-5. After making schema changes, you must deploy/start the service for the changes to take effect.
+3. Create Views for querying the Model. For a single-field `transformIndex`, name the **field** — the index will be created for you on deploy
+4. Create a `ModelIndex` **only** for compound indexes, specifying `fields` only, and reference each one from a view by its canonical name
+5. After making schema changes, you must deploy/start the service for the changes to take effect
+6. After deploying, check that every index's `fields` names real fields on the model
 
 ### Modify an Existing Schema
 
 1. List Models to find the one to modify
-2. List Fields/Views/Indexes for that Model
+2. List Fields/Views/Indexes for that Model (paging through the results)
 3. Update or create new Fields/Views/Indexes as needed
-4. After making schema changes, you must deploy/start the service for the changes to take effect.
+4. After making schema changes, you must deploy/start the service for the changes to take effect
