@@ -52,6 +52,8 @@ This important section contains documentation for how to use frontend Saasufy co
 
 ### Authentication
 
+See the [authentication.md](authentication.md) guide for how to configure OAuth providers via the Admin HTTP API before wiring up these components.
+
 [log-in-form.md](log-in-form.md): A login form component.
 [log-out.md](log-out.md): A logout link component.
 [oauth-link.md](oauth-link.md): A flexible OAuth link component which forwards users to a specific OAuth provider and can be configured to work with any supported OAuth provider.
@@ -70,6 +72,10 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 [confirm-modal.md](confirm-modal.md): A modal component which is designed to be slotted inside a `collection-viewer` component and intended to work alongside the `collection-deleter` component; the modal is triggered automatically by the `collection-viewer` when the `collection-deleter` is clicked. It asks the user for confirmation with a custom message and, if confirmed, it will trigger an event on the `collection-viewer` which will perform the deletion.
 [overlay-modal.md](overlay-modal.md): A general-purpose overlay modal component.
+
+## Authentication
+
+[authentication.md](authentication.md): Explains how users authenticate with a Saasufy service, how to add and configure OAuth providers via the `OAuthProvider` model, and how to support email signups using the shared Saasufy Keycloak instance.
 
 ## Authorization/Access Control
 

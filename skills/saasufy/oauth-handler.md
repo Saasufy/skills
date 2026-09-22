@@ -31,4 +31,4 @@ When using an OAuth provider, the callback URL which you register with the provi
 
 Some OAuth providers, including the shared Saasufy Keycloak instance, may require you to specify the `redirect-uri` attribute; in this case, it should match the allowed `redirectURI` which was specified on the `OAuthProvider` record and/or on the OAuth provider's service.
 
-See the `OAuth` section of the [access-control.md](access-control.md) guide for more information about integrating with the shared/hosted Saasufy Keycloak instance. This is the simplest way to support email signups within your application.
+See the `OAuth` section of the [authentication.md](authentication.md) guide for more information about integrating with the shared/hosted Saasufy Keycloak instance. This is the simplest way to support email signups within your application.
