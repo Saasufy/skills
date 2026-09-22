@@ -1,6 +1,6 @@
 # Saasufy Authentication
 
-## When to Use This Skill
+## When to Use This SkillF
 
 Use this skill when you need to:
 - Let users log in or sign up for your application
@@ -40,6 +40,8 @@ Creating the `keycloak` provider will automatically create a corresponding OAuth
 Note that deleting and re-creating an `OAuthProvider` record with the `providerName` set to `keycloak` will automatically reset the client in the Keycloak instance with the original (automatic) `providerClientId` and a newly generated secret; then you just need to provide the `redirectURI` again.
 
 After making changes to `OAuthProvider` records, remember to deploy the changes on Saasufy.
+
+You can find details (including HTTP endpoints) of the shared Keycloak instance and realm under the 'keycloak' entry in the JSON object from the following URL: https://saasufy.com/oauth-settings.js - Make sure that you use the details for the tenant instance. The master instance is reserved for the Saasufy admin control panel.
 
 ### Frontend Components
 
