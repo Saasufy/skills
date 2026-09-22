@@ -28,16 +28,17 @@ A modal component to prompt the user for confirmation before performing sensitiv
   <div slot="viewport"></div>
 
   <!-- The confirm-modal element must be specified here with slot="modal" to prompt the user for confirmation -->
-  <confirm-modal slot="modal" title="Delete confirmation" message="" confirm-button-label="Delete"></confirm-modal>
+  <confirm-modal slot="modal" heading="Delete confirmation" message="" confirm-button-label="Delete"></confirm-modal>
 </collection-viewer>
 ```
 
 **Attributes**
 
-- `title`: The text to show in the modal's title bar.
+- `heading`: The text to show in the modal's title bar.
 - `message`: The text to show as the modal's main content.
 - `confirm-button-label`: The text to use as the confirm button label.
 - `cancel-button-label`: The text to use as the cancel button label.
+- `auto-focus`: Which button to focus when the modal is shown; either `confirm` (or its alias `delete`) or `cancel`. If not specified, no button will be focused.
 
 **Styling**
 
