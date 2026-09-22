@@ -130,6 +130,26 @@ For example, the above markup could be written as:
 
 Even though the `productName` variable from the child app-router is not being used inside the fat-arrow function, merely referencing it inside the expression creates a dependency on that variable which ensures that the expression will not be accidentally rendered by the parent app-router.
 
+### Template placeholder is empty because the Model name clashes with a global variable
+
+Template expressions are evaluated as JavaScript, so a name which is not provided by an enclosing component falls through to the global `window` object. If a `Model` shares its name with a browser global, the placeholder silently resolves against that global instead of your data.
+
+For example, `{{Credential.id}}` renders as an empty string because the browser defines `window.Credential`, so the expression evaluates as `window.Credential.id` which is `undefined`. Nothing throws, so there is no error in the console. Other names to watch out for include `Notification`, `Event`, `Request`, `Response`, `Location`, `File`, `Comment`, `Text`, `Option` and `Screen`; check `window.YourModelName` in the browser console to confirm.
+
+The fix is to set a `type-alias` on the `collection-viewer`, `model-viewer` or `collection-reducer` and update every placeholder in its template to match:
+
+```html
+<collection-viewer collection-type="Credential" type-alias="AppCredential" ...>
+  <template slot="item">
+    <div class="credential">{{AppCredential.label}} ({{AppCredential.id}})</div>
+  </template>
+
+  <div slot="viewport"></div>
+</collection-viewer>
+```
+
+The alias also applies to the error variable, so it becomes `{{$AppCredential.error.message}}`. Alternatively, rename the `Model` itself in your schema; when naming new models, prefer names which cannot clash, such as `UserCredential` instead of `Credential`.
+
 ### Issues related to passing reserved characters in HTML attributes such as commas and equal signs
 
 Some component attributes take comma-separated values. In certain advanced scenarios, you may want the value for one of the properties to itself be a comma-separate value. In this case you would need to add single quotation marks around the nested value. See how the comma-separated value of the `fields` property is specified below.

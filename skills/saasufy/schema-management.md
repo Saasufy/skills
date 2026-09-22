@@ -73,6 +73,8 @@ Required fields:
 - `name` (string, alphanumeric, 1-max length)
 - `position` (integer, for ordering in UI)
 
+**Avoid naming a `Model` after a browser global** (`Credential`, `Notification`, `Event`, `Request`, `Response`, `Location`, `File`, `Comment`, `Text`, `Option`, `Screen`, ...). Frontend template placeholders fall through to `window`, so `{{Credential.id}}` would resolve against `window.Credential` and render empty. Prefix instead — `UserCredential`. See [debugging-and-troubleshooting.md](debugging-and-troubleshooting.md).
+
 ```bash
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
   -H "Content-Type: application/json" \
@@ -645,6 +647,7 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" -XPOST 'https://saasufy.com/api/
 6. After making schema changes, you must deploy/start the service for the changes to take effect.
 7. **Index names are assigned by Saasufy** from the indexed fields; declare single-field indexes via a view's `transformIndex` and create `ModelIndex` records only for compound indexes. See [views-and-indexing.md](views-and-indexing.md).
 8. **Listing endpoints paginate** (10 records by default) — page through them before acting on the results.
+9. **Do not name a Model after a browser global** (`Credential`, `Event`, `Request`, ...) — frontend template placeholders would resolve against `window` and render empty.
 
 ## Common Workflows
 
