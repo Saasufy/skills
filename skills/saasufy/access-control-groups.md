@@ -199,7 +199,7 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 
 ### Pattern C: Members Read, Owner Writes
 
-Members of a group can read records, but only the group owner may create/update/delete them. Use action-specific token fields:
+Members of a group can read records, but only the group owner may create/update/delete them. Use action-specific token fields — each one needs its matching model auth field, or the override is ignored:
 
 ```bash
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
@@ -212,15 +212,19 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
     "accessUpdate": "restrict",
     "accessDelete": "restrict",
     "accessCreateTokenAuthField": "groupOwnerships",
+    "accessCreateModelAuthField": "groupId",
     "accessReadTokenAuthField": "groupMemberships",
+    "accessReadModelAuthField": "groupId",
     "accessUpdateTokenAuthField": "groupOwnerships",
-    "accessDeleteTokenAuthField": "groupOwnerships"
+    "accessUpdateModelAuthField": "groupId",
+    "accessDeleteTokenAuthField": "groupOwnerships",
+    "accessDeleteModelAuthField": "groupId"
   }'
 ```
 
 ### Pattern D: Mixing per-Account and per-Group Ownership
 
-A record can have both an `accountId` (the individual creator) and a `groupId` (the group it belongs to). Use field-level access control or action-specific auth fields to combine both. For example, allow the original author to edit while letting any group member read:
+A record can have both an `accountId` (the individual creator) and a `groupId` (the group it belongs to). Use action-specific auth fields to combine both. For example, allow the original author to edit while letting any group member read:
 
 ```bash
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" \

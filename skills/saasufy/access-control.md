@@ -78,6 +78,12 @@ These properties specify authentication fields for each action:
 - `accessUpdateModelAuthField` (string): Model field for update operations
 - `accessDeleteModelAuthField` (string): Model field for delete operations
 
+An action-specific pair does not replace the general `accessTokenAuthField`/`accessModelAuthField` pair; it is checked as an **alternative** to it. For a given action, access is granted if *either* pair matches, so a Model can accept two different kinds of owner per action (e.g. update allowed when the token's `accountId` matches the record's `accountId`, **or** when the token's `groupOwnerships` contains the record's `groupId`).
+
+Two constraints to keep in mind:
+1. The action-specific pair is only evaluated if its **Model** auth field is set. Setting `accessUpdateTokenAuthField` alone has no effect; always set `accessUpdateModelAuthField` alongside it.
+2. Field-level `restrict` reuses the same check for that action, so a single field cannot be given a different auth pair from the rest of the record. Use a separate Model when one field needs a narrower owner than the others.
+
 ### Update Model Access Control
 
 ```bash
