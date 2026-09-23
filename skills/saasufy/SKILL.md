@@ -93,7 +93,7 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 ## File Hosting
 
-[file-hosting.md](file-hosting.md): Describes how to upload files to Saasufy and how to view them as static files over HTTP.
+[file-hosting.md](file-hosting.md): Describes how to upload files to Saasufy and how to view them as static files over HTTP, including how to access files on restricted fields by passing the user's JWT via an `Authorization` header.
 
 ## Search Filtering and Querying
 

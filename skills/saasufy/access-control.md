@@ -139,6 +139,8 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 
 Field-level access control allows you to restrict access to specific fields within a Model. This is useful for sensitive data like email addresses, phone numbers, or personal information.
 
+These same rules are enforced on the `/files` HTTP endpoint used to serve `blob` fields; see [file-hosting.md](file-hosting.md) for how a browser or HTTP client passes the user's JWT when reading a restricted file.
+
 ### Field Access Properties
 
 - `accessCreate` (enum): Who can set this field when creating records
