@@ -76,6 +76,7 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 ## Authentication
 
 [authentication.md](authentication.md): Explains how users authenticate with a Saasufy service, how to add and configure OAuth providers via the `OAuthProvider` model, and how to support email signups using the shared Saasufy Keycloak instance.
+[account-table.md](account-table.md): Explains the special `Account` table which Saasufy's auth layer populates on login, and how to expose it, its standard fields and its standard indexes via the Admin HTTP API so your app can read and extend user profiles.
 
 ## Authorization/Access Control
 

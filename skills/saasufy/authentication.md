@@ -7,6 +7,9 @@ Use this skill when you need to:
 - Add or configure an OAuth provider (e.g. GitHub, Google, Keycloak)
 - Support email signups using the shared Saasufy Keycloak instance
 - Understand which fields end up on a user's JWT for use by access control rules
+- Read or extend a user's profile record (see [account-table.md](account-table.md))
+
+A successful login upserts a record in your service's special `Account` table; [account-table.md](account-table.md) explains how to expose that table along with its standard fields and indexes.
 
 For rules about what an authenticated user is then allowed to do, see [access-control.md](access-control.md).
 
