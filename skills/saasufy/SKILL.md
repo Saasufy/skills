@@ -91,6 +91,10 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 [deployment-and-testing.md](deployment-and-testing.md): A guide which describes Saasufy's deployment process and explains how to test.
 
+## Scalability
+
+[scalability.md](scalability.md): A guide which explains how a Saasufy service is spread across worker processes and hosts, how to set the account's service worker count and what the plan allows, what scales automatically (client connections, realtime pub/sub, aggregation sharding) and what has to be designed for (in-process state is per-worker, the database is the shared bottleneck). It also describes what a deploy does to a multi-worker service and how crashed workers are handled. Read it before raising the worker count or when writing app logic which has to stay correct across several workers.
+
 ## File Hosting
 
 [file-hosting.md](file-hosting.md): Describes how to upload files to Saasufy and how to view them as static files over HTTP, including how to access files on restricted fields by passing the user's JWT via an `Authorization` header.
