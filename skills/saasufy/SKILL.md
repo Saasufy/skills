@@ -101,7 +101,7 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 ## Data Aggregation Pipelines
 
-[data-aggregation-pipelines.md](data-aggregation-pipelines.md): A guide for creating aggregation pipelines which can be used to automatically populate a target collection in realtime by grouping and/or filtering records from a source collection. It can be used to implement features such as high-score tables, time-series running averages as well as history tables (to keep track of changes made to a source collection and its records over time). This feature is designed to scale linearly across available workers.
+[data-aggregation-pipelines.md](data-aggregation-pipelines.md): A guide for creating aggregation pipelines which can be used to automatically populate a target collection in realtime by grouping and/or filtering records from a source collection. It can be used to implement features such as high-score tables, time-series running averages as well as history tables (to keep track of changes made to a source collection and its records over time) as well as summary fields written onto the existing records of a related collection (e.g. joining the skills of a candidate onto their `Candidate` record). This feature is designed to scale linearly across available workers.
 
 ## Utility Functions
 

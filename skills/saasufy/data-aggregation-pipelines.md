@@ -7,6 +7,7 @@ Use this skill when you need a collection whose records are derived automaticall
 - Time-series statistics (average/min/max of sensor readings per minute, per hour...)
 - Counters and totals (number of orders and revenue per customer, per product, per day...)
 - History tables which keep track of how the records of a collection change over time.
+- Summary fields written onto the records of a **related collection**; e.g. joining the skill names of all the `CandidateSkill` records of a candidate into a `skills` field on the matching `Candidate` record (see `useGroupAsId` and `updateOnly` below).
 
 Aggregation pipelines run inside the user's deployed service. They keep the target collection up to date in realtime and scale linearly across the service's workers. You don't need any custom backend code or frontend processing.
 
@@ -29,7 +30,7 @@ An aggregation pipeline is made up of an `Aggregation` resource and a set of rul
 - The `Aggregation` belongs to a **target model** (`modelId`) and reads from a **source model** (`sourceModelId`).
 - **Project rules** (`AggregationProjectRule`) copy the value of a source field straight into a target field.
 - **Group rules** (`AggregationGroupRule`) put a source field's value into a bucket and write the bucket value into a target field. The value is either used as it is (`exact`) or rounded to a multiple of an operand, for example to group timestamps minute by minute.
-- **Aggregate rules** (`AggregationAggregateRule`) combine the values of a source field across every source record in a group into a single value (`avg`, `sum`, `min`, `max` or `count`).
+- **Aggregate rules** (`AggregationAggregateRule`) combine the values of a source field across every source record in a group into a single value (`avg`, `sum`, `min`, `max`, `count` or `join`).
 - **Constant rules** (`AggregationConstantRule`) write the same fixed value into a target field of every target record.
 
 ### How records are grouped
@@ -42,13 +43,27 @@ Each source record belongs to a group. The group is identified by the record's v
 
 If an aggregation has no project or group rules, all matching source records fall into a single group, so the target model ends up with a single record.
 
-The ID of a target record is derived from the aggregation ID and the group, so it stays the same over time. The exception is when the `id` field is projected (and the sweep is not disabled): the target record ID is then derived from the source record ID, so the target record stays the same even when other projected values change.
+The ID of a target record is derived from the aggregation ID and the group, so it stays the same over time. The exception is when the `id` field is projected (and the purge is not disabled): the target record ID is then derived from the source record ID, so the target record stays the same even when other projected values change.
+
+### Aggregating onto the records of a related collection
+
+By default the aggregation owns its target records: their IDs are opaque values derived from the aggregation and the group. Set `useGroupAsId` on the `Aggregation` to instead use the **computed group value itself** as the target record ID. Where several fields are grouped by, their values are run together with nothing between them; projected fields take no part in the ID.
+
+This is what lets a collection be aggregated onto the existing records of a different, related collection. If `CandidateSkill` records carry a `candidateId` foreign key, then grouping by `candidateId` with `useGroupAsId` set means every `CandidateSkill` record of a given candidate is rolled up onto the `Candidate` record whose `id` is that `candidateId`.
+
+Because the aggregation then writes into a collection it doesn't own, pair it with `updateOnly` so that it only ever **updates** records which already exist and never creates new ones. Without it, a group whose ID doesn't match any existing record (e.g. a `CandidateSkill` pointing at a deleted candidate) would create a stray record in the target collection.
+
+Requirements and caveats:
+- The aggregation must have **at least one group rule**; it is skipped otherwise (the reason is written to `lastError`).
+- The group values must be ID-shaped, i.e. the grouped source field holds the target record's `id`.
+- Set `disablePurge` too, unless you actually want the aggregation to delete target records whose last source record went away. A `Candidate` with no `CandidateSkill` records should normally be kept.
+- The aggregation still owns the target fields its rules write to. Keep those fields separate from the fields the rest of the app writes; a rule's target field is overwritten whenever its group is recomputed.
 
 ### When aggregations are computed
 
 - **Realtime:** Whenever a source record is created, updated or deleted, the service immediately recomputes the groups affected by the change. That means the group the record is now in and, if it moved or was deleted, the group it left. The target collection updates in realtime, so a `collection-viewer` bound to it updates live.
 - **Periodic cycles:** Every `aggregationInterval` milliseconds (or at the service's aggregation interval, which is 60 seconds by default) the service walks through source records which were written since the last cycle and recomputes their groups. This catches anything the realtime path missed. New writes are left to settle for about 5 seconds before a cycle picks them up.
-- **Sweep:** After a change to the grouping or a rebuild, the service walks through the target records once and deletes the ones which no longer have any source records behind them (unless `disableSweep` is set).
+- **Purge:** After a change to the grouping or a rebuild, the service walks through the target records once and deletes the ones which no longer have any source records behind them (unless `disablePurge` is set).
 
 A group is always recomputed from scratch by reading all its source records. This keeps target records correct through edits and deletions, and makes the process safe to repeat. A target record is only rewritten if one of its values actually changed.
 
@@ -72,9 +87,11 @@ Fields:
 - `sourceFilterQuery` (string, optional): A query in the Saasufy query format (see [search-filtering-querying.md](search-filtering-querying.md)). Only source records which match the query take part in the aggregation; e.g. `status = active ~AND~ amount >= 10`. If left empty or null, then every source record takes part.
 - `minSourceUpdatedAt` (integer, optional): A timestamp in milliseconds since the Unix epoch. Source records whose `updatedAt` is older than this value are left out. This avoids walking over a long history of old records. If null, then there is no lower bound.
 - `aggregationInterval` (integer, optional): How often the periodic cycle runs for this aggregation, in milliseconds. Must be at least `10000`. If null, then the service's aggregation interval (60000 by default) is used.
-- `disableSweep` (boolean, optional): If `true`, then the service never deletes target records. Every target record which has ever been written is kept, even when its source records are edited out of its group or deleted. This is what allows history tables to be built (see the examples below).
+- `disablePurge` (boolean, optional): If `true`, then the service never deletes target records. Every target record which has ever been written is kept, even when its source records are edited out of its group or deleted. This is what allows history tables to be built (see the examples below).
+- `updateOnly` (boolean, optional): If `true`, then the service never **creates** a target record. A group which already has one goes on being kept up to date; a group which has none is passed over, however many source records it holds. This is what stops an aggregation from spamming a target collection it doesn't own with redundant rows. It says nothing about records which are already there: they are still purged once their last source record leaves them unless the purge is disabled. Groups which were passed over are only taken in once this is turned off and the aggregation is rebuilt.
+- `useGroupAsId` (boolean, optional): If `true`, then the computed group value is used as the `id` of the target records which are created and updated, rather than an ID derived from the aggregation and the group. Where several fields are grouped by, their values are run together with nothing between them; projected fields take no part in the ID. The aggregation is skipped if it has no group rules. See [Aggregating onto the records of a related collection](#aggregating-onto-the-records-of-a-related-collection).
 - `isPaused` (boolean, optional): If `true`, then the aggregation doesn't run at all. Takes effect on the next deployment.
-- `rebuildRequestedAt` (number, optional): Set this to the current timestamp (`Date.now()`) to make the service recompute the aggregation from every source record and sweep the target model again. **This takes effect without a redeployment.**
+- `rebuildRequestedAt` (number, optional): Set this to the current timestamp (`Date.now()`) to make the service recompute the aggregation from every source record and purge the target model again. **This takes effect without a redeployment.**
 - `lastRunAt` (number, written by the service): When the aggregation last processed records.
 - `lastError` (string, written by the service): The last error encountered by the aggregation, or the reason why it was skipped (e.g. a missing target field). Null if there is no error. Check this field when an aggregation isn't producing the expected records.
 - `lastErrorWorkerIndex` (integer, written by the service): Which worker reported `lastError`.
@@ -136,13 +153,16 @@ Fields:
   - `min`: The smallest numeric value.
   - `max`: The largest numeric value.
   - `count`: The number of source records in the group which have a non-null value for the source field (of any type). Use `id` as the source field to count all records in the group.
+  - `join`: The non-null values of the source field (of any type) strung together into a single string. The values are **sorted** first, so the same group always reads the same way and its target record isn't rewritten on every cycle. The target field must be a string field.
 - `operand` (number, optional): Only used by the `avg` operation. It is the number of decimal places to round the result to. If not set, then the result is not rounded.
+- `stringOperand` (string, optional, max 50 characters): Only used by the `join` operation. It is the delimiter to put between the values. If not set, then the values are joined with a comma (`,`). An empty string joins them with nothing.
 - `modifier` (string, optional): Only used by the `avg` operation when `operand` is set. Can be `floor`, `round` or `ceil`. Defaults to `round`.
 - `targetField` (string, optional): Defaults to the same name as `sourceField`. If multiple rules read from the same source field, then each of them must specify a distinct `targetField`. If the target field is not declared on the target model, then that rule's value is not written (a warning is logged but the rest of the aggregation still runs).
 - `createdAt`, `updatedAt` (numbers, timestamps, automatic)
 
 Notes:
 - `avg`, `sum`, `min` and `max` ignore values which are not finite numbers. `avg` and `sum` produce `null` when the group has no numeric values.
+- `count` and `join` accept a value of any type; they only skip source records whose source field is null. `join` produces `null` when the group has no values.
 - A group can contain at most 10000 source records by default. Beyond that, only the first 10000 are aggregated and a warning is logged. Design groups to be granular enough; e.g. group readings per sensor per minute rather than per sensor.
 
 ### AggregationConstantRule
@@ -265,7 +285,7 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
 
 ### Rebuild an Aggregation
 
-Recomputes the aggregation from every source record and sweeps the target model again. This does not require a deployment.
+Recomputes the aggregation from every source record and purges the target model again. This does not require a deployment.
 
 ```bash
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" \
@@ -304,7 +324,9 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" -XPOST 'https://saasufy.com/api/
 
 - **Adding, removing or changing project/group rules** (or their operations or operands) changes how records are grouped. After the next deployment, the aggregation is automatically recomputed from the beginning.
 - **Changing `sourceFilterQuery`, `minSourceUpdatedAt`, aggregate rules or constant rules** only affects groups as they get recomputed. Rebuild the aggregation (after deploying) to apply the change to all existing target records. Note that lowering `minSourceUpdatedAt` only brings in the older records after a rebuild.
-- **Changing `disableSweep`** changes how target records are identified, so records which have already been aggregated are left as they are.
+- **Changing `disablePurge`** changes how target records are identified, so records which have already been aggregated are left as they are.
+- **Changing `useGroupAsId`** changes which record a group is written to, so records which have already been aggregated are left where they are. Rebuild the aggregation, and delete the records written under the old IDs yourself.
+- **Turning `updateOnly` off** does not retroactively create the target records of groups which were passed over; rebuild the aggregation to take them in.
 
 ## Examples
 
@@ -474,7 +496,7 @@ Tips for time-series:
 
 **Goal:** Keep a record of every version of each `Product` record, so the frontend can show how its price and stock changed over time.
 
-This relies on `disableSweep`. With the sweep disabled, target records are never deleted. Each new version of a source record lands in a new group (because its `updatedAt` changed), so a new target record is written for it while the target records of previous versions are kept.
+This relies on `disablePurge`. With the purge disabled, target records are never deleted. Each new version of a source record lands in a new group (because its `updatedAt` changed), so a new target record is written for it while the target records of previous versions are kept.
 
 **Source model `Product`**:
 - `name` (string, required)
@@ -497,7 +519,7 @@ curl -H "Authorization:Bearer $SAASUFY_API_KEY" -H "Content-Type: application/js
 # Never delete history records
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" -H "Content-Type: application/json" \
   -XPUT 'https://saasufy.com/api/Aggregation/{AGGREGATION_ID}' \
-  -d '{"disableSweep": true}'
+  -d '{"disablePurge": true}'
 
 # One target record per (product id, updatedAt) = one record per version
 curl -H "Authorization:Bearer $SAASUFY_API_KEY" -H "Content-Type: application/json" \
@@ -537,7 +559,72 @@ Caveats:
 - Deleting a source record keeps its history but doesn't add a "deleted" entry. To record deletions, use a soft-delete flag (e.g. set an `isDeleted` boolean field and project it) instead of deleting records.
 - History tables grow forever since nothing is swept. Set `minSourceUpdatedAt` to limit how far back the history goes when first creating the aggregation on a model which already has a lot of data.
 
-**Variation: daily snapshots.** Group on `updatedAt` with `round-down` and an operand of `86400000` (into a `day` field) instead of `exact`. You then get one history record per product per day, holding the product's last version for that day. Keep `disableSweep` enabled so that previous days are retained.
+**Variation: daily snapshots.** Group on `updatedAt` with `round-down` and an operand of `86400000` (into a `day` field) instead of `exact`. You then get one history record per product per day, holding the product's last version for that day. Keep `disablePurge` enabled so that previous days are retained.
+
+### Example 4: Summarising a Related Collection onto its Parent Records
+
+**Goal:** Each `Candidate` has many `CandidateSkill` records linked by a `candidateId` foreign key. Show the candidate's skills and how many they have directly on the `Candidate` record, so a single `collection-viewer` over `Candidate` can display and filter them without loading the child records.
+
+This relies on `useGroupAsId` and `updateOnly`. Grouping by `candidateId` and using the group as the ID means each group is written onto the `Candidate` record whose `id` is that `candidateId`; `updateOnly` makes sure a `CandidateSkill` with a dangling `candidateId` cannot create a bogus `Candidate`.
+
+**Source model `CandidateSkill`**:
+- `candidateId` (string, required) — the `id` of a `Candidate`
+- `skillName` (string, required)
+
+**Target model `Candidate`** (an ordinary collection the app creates and edits itself), with two extra fields reserved for the aggregation:
+- `skills` (string) — the joined skill names
+- `skillCount` (integer)
+
+Leave the normal access rules on `Candidate` as they are: the aggregation writes to it as the service, and it can only update.
+
+```bash
+# The aggregation only ever updates existing Candidate records, and never deletes one
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" -H "Content-Type: application/json" \
+  -XPOST 'https://saasufy.com/api/Aggregation' \
+  -d '{"aggregationName": "candidateSkills", "modelId": "{CANDIDATE_MODEL_ID}", "sourceModelId": "{CANDIDATE_SKILL_MODEL_ID}", "useGroupAsId": true, "updateOnly": true, "disablePurge": true}'
+
+# Group by candidateId; with useGroupAsId the group value becomes the target record id.
+# No targetField is given because candidateId is not a field of Candidate; its own id is the value.
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" -H "Content-Type: application/json" \
+  -XPOST 'https://saasufy.com/api/AggregationGroupRule' \
+  -d '{"aggregationId": "{AGGREGATION_ID}", "sourceField": "candidateId", "operation": "exact", "targetField": "id"}'
+
+# Join every skill name of the candidate into one string, separated by ", "
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" -H "Content-Type: application/json" \
+  -XPOST 'https://saasufy.com/api/AggregationAggregateRule' \
+  -d '{"aggregationId": "{AGGREGATION_ID}", "sourceField": "skillName", "operation": "join", "stringOperand": ", ", "targetField": "skills"}'
+
+# How many skills the candidate has
+curl -H "Authorization:Bearer $SAASUFY_API_KEY" -H "Content-Type: application/json" \
+  -XPOST 'https://saasufy.com/api/AggregationAggregateRule' \
+  -d '{"aggregationId": "{AGGREGATION_ID}", "sourceField": "id", "operation": "count", "targetField": "skillCount"}'
+```
+
+Deploy the service. As `CandidateSkill` records are added and removed, the `skills` and `skillCount` fields of the matching `Candidate` update in realtime:
+
+```html
+<collection-viewer
+  collection-type="Candidate"
+  collection-fields="name,skills,skillCount"
+  collection-view="alphabeticalView"
+  collection-page-size="20"
+>
+  <template slot="item">
+    <div class="candidate-row">
+      <span>{{Candidate.name}}</span>
+      <span>{{Candidate.skills}}</span>
+      <span>{{Candidate.skillCount}} skills</span>
+    </div>
+  </template>
+  <div slot="viewport"></div>
+</collection-viewer>
+```
+
+**Notes:**
+- The joined values are sorted, so `skills` reads the same way every cycle and the `Candidate` record is only rewritten when its skills actually change.
+- `stringOperand` is the delimiter. Leave it out to join with a comma and no space; set it to `""` to join with nothing.
+- A `Candidate` created after its `CandidateSkill` records exist is not filled in until its group is recomputed. Rebuild the aggregation, or accept that it fills in on the next write to one of its skills.
+- Block user update access on `skills` and `skillCount` (see [access-control.md](access-control.md)); manual edits to them are overwritten the next time the group is recomputed.
 
 ## Important Notes
 
@@ -548,12 +635,15 @@ Caveats:
 5. **Two rules cannot write to the same target field.** Use distinct `targetField` values when several rules read from the same source field.
 6. **Groups are capped at 10000 source records by default**; design groups to be granular and chain aggregations to roll them up further.
 7. **Aggregations can be chained** but cannot form cycles.
-8. **Aggregation work counts towards service usage.** A shorter `aggregationInterval` keeps the periodic cycle more responsive but costs more database operations. Realtime updates from source record writes happen regardless of the interval.
+8. **When aggregating onto a collection the app also writes to** (`useGroupAsId`), set `updateOnly` and `disablePurge` so that the aggregation can neither create nor delete records in it, and reserve the rules' target fields for the aggregation.
+9. **Aggregation work counts towards service usage.** A shorter `aggregationInterval` keeps the periodic cycle more responsive but costs more database operations. Realtime updates from source record writes happen regardless of the interval.
 
 ## Troubleshooting
 
 - **No target records appear:** Check that the service has been deployed and look at the aggregation's `lastRunAt` and `lastError` fields. A null `lastRunAt` with no error means that the aggregation hasn't run yet; the first cycle starts a few seconds after deployment.
 - **An aggregate value is missing from target records:** The target field is probably not declared on the target model. Declare it, deploy, then rebuild the aggregation.
 - **Target records don't reflect a changed filter query, constant or aggregate rule:** Deploy, then rebuild the aggregation.
-- **Stale target records remain after source records were deleted:** Check that `disableSweep` is not set. Rebuild the aggregation to trigger a fresh sweep.
+- **Stale target records remain after source records were deleted:** Check that `disablePurge` is not set. Rebuild the aggregation to trigger a fresh purge.
+- **Unwanted records appear in a target collection which the app also writes to:** Set `updateOnly` so that the aggregation can only update existing records, and delete the stray records. Check as well that `useGroupAsId` is set and that the grouped source field really holds the target records' IDs.
+- **No target records are updated at all with `useGroupAsId` set:** The group values aren't matching any target record IDs. Check `lastError` (the aggregation is skipped outright if it has no group rules) and confirm that the grouped field holds the target `id` and not some other value.
 - **Records are unexpectedly split into several target records:** Every projected field is part of the group's identity. Remove project rules for fields which vary between records that should be combined.
