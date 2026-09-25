@@ -55,7 +55,7 @@ This important section contains documentation for how to use frontend Saasufy co
 See the [authentication.md](authentication.md) guide for how to configure OAuth providers via the Admin HTTP API before wiring up these components.
 
 [log-in-form.md](log-in-form.md): A login form component.
-[log-out.md](log-out.md): A logout link component.
+[log-out.md](log-out.md): A logout link component. It deauthenticates the socket and can optionally also end the session on the OAuth provider which the user logged in with.
 [oauth-link.md](oauth-link.md): A flexible OAuth link component which forwards users to a specific OAuth provider and can be configured to work with any supported OAuth provider.
 [oauth-handler.md](oauth-handler.md): A flexible OAuth handler component which can handle the response/redirect from any supported OAuth provider and, upon successful authentication via the Saasufy backend, will redirect the user to the appropriate URL.
 

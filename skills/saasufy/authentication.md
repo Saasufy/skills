@@ -54,3 +54,5 @@ The OAuth flow is driven from the frontend by two components which must agree on
 - [oauth-handler.md](oauth-handler.md): Handles the response/redirect coming back from the provider and, on success, redirects the user to the appropriate URL.
 
 For username/password login against Saasufy itself, see [log-in-form.md](log-in-form.md) and [log-out.md](log-out.md).
+
+Note that logging out of your app does not log the user out of the OAuth provider; unless the provider session is also ended, the next log in will succeed without the user having to enter their credentials again. Providers which support RP-initiated log out (including Keycloak) can be logged out of by setting the `logout-url` attribute on the [log-out.md](log-out.md) component.
