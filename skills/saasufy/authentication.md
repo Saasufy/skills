@@ -42,6 +42,16 @@ Creating the `keycloak` provider will automatically create a corresponding OAuth
 
 Note that deleting and re-creating an `OAuthProvider` record with the `providerName` set to `keycloak` will automatically reset the client in the Keycloak instance with the original (automatic) `providerClientId` and a newly generated secret; then you just need to provide the `redirectURI` again.
 
+### Provider Environments
+
+The same provider can run in up to 3 environments: `prod`, `staging` and `dev`. The environment is appended to the `providerName` with a colon, as in `keycloak:dev`; `prod` uses the plain `providerName` (`keycloak`), so `keycloak` and `keycloak:prod` are the same provider.
+
+Each environment is a separate `OAuthProvider` record with its own `redirectURI`, `providerClientId` and `providerClientSecret`; all other settings are inherited from the shared defaults of the base name, so every environment authenticates against the same OAuth instance and gives the user the same `Account` record. For `keycloak`, each environment gets its own OAuth client inside the Saasufy Keycloak instance; `prod` keeps the `saasufy-${accountId}` client ID while the others are suffixed with the environment name, as in `saasufy-${accountId}-dev`.
+
+Use the environment-qualified name (e.g. `keycloak:dev`) as the `provider` on the `oauth-link` and `oauth-handler` components of that environment's app.
+
+The `redirectURI` accepts a comma-separated list of URIs (up to 5) for cases where one environment finalizes the OAuth flow on more than one host.
+
 After making changes to `OAuthProvider` records, remember to deploy the changes on Saasufy.
 
 You can find details (including HTTP endpoints) of the shared Keycloak instance and realm under the 'keycloak' entry in the JSON object from the following URL: https://saasufy.com/oauth-settings.js - Make sure that you use the details for the tenant instance. The master instance is reserved for the Saasufy admin control panel.
