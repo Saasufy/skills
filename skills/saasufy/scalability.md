@@ -91,15 +91,9 @@ You don't need to do anything for these:
 
 ## What You Have to Design For
 
-### In-process state is per-worker
+### The database scales horizontally
 
-Each worker is a separate OS process with its own memory. A module-level counter, cache, rate-limit table or in-memory session map exists **once per worker**, and a given client's requests are not pinned to one worker. Anything which has to be consistent across requests must live in the database, not in a variable.
-
-This is the single most common way an app which worked on one worker breaks on three.
-
-### The database is the shared bottleneck
-
-Workers scale request handling, not the database behind it. An unindexed view costs the same whether one worker or six issue it; raising the worker count just lets you issue more of them at once. Before adding workers, make sure views are backed by indexes and that filtering happens in the indexed first phase where possible — see [views-and-indexing.md](views-and-indexing.md) and [search-filtering-querying.md](search-filtering-querying.md).
+Saasufy uses RethinkDB as its database so its storage layer can scale automatically across a cluster. When reading views, the fast filtering phase can scale linearly with the number of workers/hosts. For the fexible filtering phase (the second phase), the query can can slow down relative to the the total number of records traversed, however, scalability bottlenecks can be easily avoided by tuning the fast filtering phase to reduce the result set. Note that all distributed databases face similar hurdles at scale; Saasufy simplifies the challenge by making the boundary between the two filtering phases clear and adjustable. It's up to the application owner to decide what the right UX tradeoffs are for their situation. Saasufy takes some of the most complex distributed systems challenges possible and converts them into a simple actionable UX decisions which can be resolved by a non-technical person.
 
 ### Aggregation groups are capped
 
@@ -107,7 +101,7 @@ A group can hold at most 10000 source records by default; beyond that only the f
 
 ### Clients reconnect on every deploy
 
-A deploy is a hard restart, not a rolling one (see below). Clients are disconnected and reconnect on their own. `socket-provider` reconnects automatically; tune the backoff with `socket-options` if you need to (`autoReconnectOptions.initialDelay:number=2000,...`) — see [socket-provider.md](socket-provider.md).
+A deploy is a hard restart which typially takes a few seconds. It is designed to be seamless and unnoticeable for end-users (besides slowing down the next load). Clients are disconnected and reconnect on their own and they recover their latest active state via a subscribe-and-fetch mechanism which guarantees that realtime updates cannot be missed. `socket-provider` reconnects automatically; tune the backoff with `socket-options` if you need to (`autoReconnectOptions.initialDelay:number=2000,...`) — see [socket-provider.md](socket-provider.md).
 
 ## Deploys and Restarts on a Multi-Worker Service
 
