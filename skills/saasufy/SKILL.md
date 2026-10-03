@@ -107,6 +107,14 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 [data-aggregation-pipelines.md](data-aggregation-pipelines.md): A guide for creating aggregation pipelines which can be used to automatically populate a target collection in realtime by grouping and/or filtering records from a source collection. It can be used to implement features such as high-score tables, time-series running averages as well as history tables (to keep track of changes made to a source collection and its records over time) as well as summary fields written onto the existing records of a related collection (e.g. joining the skills of a candidate onto their `Candidate` record). This feature is designed to scale linearly across available workers.
 
+## Cloud Functions, Constants and Scheduled Tasks
+
+[cloud-functions.md](cloud-functions.md): A guide for the `CloudFunction` feature, which runs sandboxed server-side JavaScript inside the service and exposes it over HTTP at `{SERVICE_URL}/functions/{name}`. Read it before writing any server-side logic, webhook handler or third-party integration which must not run in the browser. It covers managing functions via the Admin HTTP API, the sandbox globals (`params`, `request`, `response`, `crud`, `r`, `fetch`, `console`, `process.env`), the per-invocation limits, the error statuses and the fact that the HTTP hook is unauthenticated by default.
+
+[constants.md](constants.md): A guide for the `Constant` feature, which stores named, typed values (including secrets) on the account and exposes them to cloud functions through `process.env`. Read it before hard-coding a token, threshold or feature flag into a cloud function.
+
+[scheduled-tasks.md](scheduled-tasks.md): A guide for the `ScheduledTask` feature, which invokes a cloud function at a fixed interval (minimum one minute). Read it for any recurring server-side work. It explains which changes need a redeployment, how a task's function tells a scheduled run from an HTTP call, and how tasks are divided between service workers.
+
 ## Utility Functions
 
 [utility-functions.md](utility-functions.md): Describes utility functions which are provided by Saasufy to help manage data with JavaScript. It provides utility functions for template rendering as well as utility functions for fetching filtered collections in various ways; for example with pagination, filtering etc... The JavaScript utility functions are intended to be used as a last-resort for fetching data for frontend processing. In the vast majority of cases, for displaying filtered views, the `collection-viewer` component should be used instead since those utility functions do not provide realtime updates.
@@ -117,4 +125,6 @@ Note that modal elements use the shadow DOM so you should read the relevant docs
 
 # Saasufy Statistics and Analytics
 
-Saasufy keeps track of statistics and analytics by the minute and by the hour; they are exposed via the `ServiceAggregatedStats` and `ServiceAggregatedModelAnalytics` models. See the [schema-management.md](schema-management.md) guide for details about the schema and instructions explaining how to interact with those models.
+Saasufy keeps track of statistics and analytics by the minute and by the hour; they are exposed via the `ServiceAggregatedStats`, `ServiceAggregatedModelAnalytics` and `ServiceAggregatedCloudFunctionAnalytics` models. See the [schema-management.md](schema-management.md) guide for details about the schema and instructions explaining how to interact with those models.
+
+Cloud functions are part of this: `ServiceAggregatedStats` (and `Usage`) carry `serviceCloudFunctionCount` and `serviceCloudFunctionProcessingTime`, while `ServiceAggregatedCloudFunctionAnalytics` breaks calls, errors and processing time down per function. See [cloud-functions.md](cloud-functions.md).

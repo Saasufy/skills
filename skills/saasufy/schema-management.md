@@ -43,12 +43,18 @@ An admin can access the following resources via the admin HTTP API:
 - ModelField
 - ModelIndex
 - ModelView
+- Aggregation (and its AggregationGroupRule, AggregationAggregateRule, AggregationProjectRule, AggregationConstantRule records)
 - BlockchainAuthProvider
 - OAuthProvider
 - APICredential
+- ModelWatcher
+- CloudFunction
+- Constant
+- ScheduledTask
 - Usage
 - ServiceAggregatedStats
 - ServiceAggregatedModelAnalytics
+- ServiceAggregatedCloudFunctionAnalytics
 
 ### List All Models
 
@@ -548,6 +554,8 @@ Read-only fields returned on Usage records:
 - `accountId` (UUID)
 - `adminOpCount`, `adminTransmitCount`, `adminInvokeCount`, `adminPublishInCount`, `adminPublishOutCount`, `adminSubscribeCount`, `adminAuthenticateCount`, `adminHTTPRequestCount`, `adminRequestProcessingTime` (numbers, admin API usage counters)
 - `serviceOpCount`, `serviceTransmitCount`, `serviceInvokeCount`, `servicePublishInCount`, `servicePublishOutCount`, `serviceSubscribeCount`, `serviceAuthenticateCount`, `serviceHTTPRequestCount`, `serviceRequestProcessingTime` (numbers, service API usage counters)
+- `serviceAggregationCount`, `serviceAggregationProcessingTime` (numbers, aggregation reads and writes; also included in `serviceOpCount` and `serviceRequestProcessingTime`)
+- `serviceCloudFunctionCount`, `serviceCloudFunctionProcessingTime` (numbers, cloud function calls; also included in `serviceOpCount`, `serviceRequestProcessingTime` and — for calls which arrived over HTTP — `serviceHTTPRequestCount`). See [cloud-functions.md](cloud-functions.md).
 - `serviceBytesWritten`, `serviceBytesRead`, `serviceBytesStored` (numbers, storage/IO usage)
 - `paidAt` (number, timestamp when the usage period was paid; `-1` if unpaid)
 - `closedAt` (number, timestamp when the usage period was closed; `-1` if still open)
@@ -583,7 +591,10 @@ Read-only fields returned on ServiceAggregatedStats records:
 - `type` (string, aggregation bucket type; can be `"interval"` or `"daily"`)
 - `accountId` (UUID)
 - `serviceOpCount`, `serviceTransmitCount`, `serviceInvokeCount`, `servicePublishInCount`, `servicePublishOutCount`, `serviceSubscribeCount`, `serviceAuthenticateCount`, `serviceHTTPRequestCount`, `serviceRequestProcessingTime` (numbers, service API usage counters)
+- `serviceAggregationCount`, `serviceAggregationProcessingTime` (numbers, aggregation reads and writes)
+- `serviceCloudFunctionCount`, `serviceCloudFunctionProcessingTime` (numbers, cloud function calls). See [cloud-functions.md](cloud-functions.md).
 - `serviceBytesWritten`, `serviceBytesRead`, `serviceBytesStored` (numbers, storage/IO usage)
+- `timestamp` (number, timestamp of the aggregation bucket)
 - `createdAt`, `updatedAt` (numbers, timestamps)
 
 Note: ServiceAggregatedStats records cannot be created, updated, or deleted via the Admin HTTP API.
@@ -630,6 +641,42 @@ Read-only fields returned on ServiceAggregatedModelAnalytics records:
 - `createdAt`, `updatedAt` (numbers, timestamps)
 
 Note: ServiceAggregatedModelAnalytics records cannot be created, updated, or deleted via the Admin HTTP API.
+
+## ServiceAggregatedCloudFunctionAnalytics Management
+
+ServiceAggregatedCloudFunctionAnalytics records store aggregated per-cloud-function call analytics (interval or daily). These records are generated automatically by the system and are read-only. See [cloud-functions.md](cloud-functions.md).
+
+### List ServiceAggregatedCloudFunctionAnalytics Records
+
+Available views:
+- **`accountLatestView`** — Latest records across all functions, ordered by timestamp descending. Params: `accountId`.
+- **`accountLatestIntervalFunctionView`** — Latest `interval`-type records for a specific function, ordered by timestamp descending. Params: `accountId`, `functionName`.
+- **`accountLatestDailyFunctionView`** — Latest `daily`-type records for a specific function, ordered by timestamp descending. Params: `accountId`, `functionName`.
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceAggregatedCloudFunctionAnalytics?view=accountLatestView'
+```
+
+```bash
+curl -g -H "Authorization:Bearer $SAASUFY_API_KEY" \
+  -XGET 'https://saasufy.com/api/ServiceAggregatedCloudFunctionAnalytics?view=accountLatestIntervalFunctionView&viewParams[functionName]={FUNCTION_NAME}'
+```
+
+### ServiceAggregatedCloudFunctionAnalytics Fields
+
+Read-only fields returned on ServiceAggregatedCloudFunctionAnalytics records:
+- `id` (UUID)
+- `type` (string, aggregation bucket type; can be `"interval"` or `"daily"`)
+- `accountId` (UUID)
+- `functionName` (string, name of the cloud function the analytics relate to)
+- `callCount` (number, invocations in the bucket, whether they arrived over HTTP or from a scheduled task)
+- `errorCount` (number, invocations which failed; a share of `callCount` rather than a separate total)
+- `processingTime` (number, total milliseconds spent in those invocations)
+- `timestamp` (number, timestamp of the aggregation bucket)
+- `createdAt`, `updatedAt` (numbers, timestamps)
+
+Note: ServiceAggregatedCloudFunctionAnalytics records cannot be created, updated, or deleted via the Admin HTTP API.
 
 ## Deploy Schema Changes
 
