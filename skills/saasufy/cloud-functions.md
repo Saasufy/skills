@@ -1,6 +1,23 @@
 # Saasufy Cloud Functions
 
-A `CloudFunction` is a piece of JavaScript which Saasufy runs inside your service, in a sandboxed QuickJS VM, and exposes over HTTP at `{SERVICE_URL}/functions/{name}`. Use it for webhooks, server-side validation, third-party API calls and any logic which must not run in the browser (for example because it needs a secret).
+A `CloudFunction` is a piece of JavaScript which Saasufy runs inside your service, in a sandboxed QuickJS VM, and exposes over HTTP at `{SERVICE_URL}/functions/{name}`.
+
+## Use Cloud Functions as a Last Resort
+
+Prefer a declarative Saasufy feature whenever one can do the job. Views, aggregations and access-control rules are built so that unscalable patterns are hard to express; a cloud function has no such guardrails. It does run in parallel across the workers and cores of the service, but parallelism cannot undo an inefficiency written into the code — an unindexed scan, an N+1 loop of per-record reads, or a function polled in place of a subscription will only get slower as the data grows.
+
+Check first whether the job is already covered:
+
+- Filtering, sorting, searching, paginating → a `ModelView` backed by an index. See [views-and-indexing.md](views-and-indexing.md) and [search-filtering-querying.md](search-filtering-querying.md).
+- Totals, averages, high-score tables, history tables, summary fields joined onto related records → an `Aggregation`, which is incremental and shards across workers. See [data-aggregation-pipelines.md](data-aggregation-pipelines.md).
+- Who may read or write what → access-control rules. See [access-control.md](access-control.md).
+- Login, signup, user profiles → [authentication.md](authentication.md) and [account-table.md](account-table.md).
+- Field validation → `ModelField` constraints. See [schema-management.md](schema-management.md).
+- Reacting to data changes → realtime components bound to a view or record, not a function on a timer.
+
+If none of those seem to fit, it is usually the shape of the data rather than a missing feature: store the answer instead of computing it per request. A function which counts a collection on every call is an `Aggregation`; one which loops over related records is an aggregation writing a summary field onto the related record; one which filters in JavaScript usually just needs a precomputed field and a compound index so that a view can express the filter.
+
+Reach for a cloud function when there is genuinely no declarative equivalent — a third-party webhook, an external API call, work needing a secret which must not reach the browser, an imperative multi-step operation — and then keep it short and bound the work it does per invocation.
 
 Cloud functions are managed through the Admin HTTP API (or the `Cloud Functions` page of the dashboard) and invoked on the deployed service URL.
 
