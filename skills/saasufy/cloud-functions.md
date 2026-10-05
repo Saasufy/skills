@@ -107,7 +107,7 @@ curl -XPOST "$SAASUFY_SERVICE_URL/functions/greet" \
 curl -XGET "$SAASUFY_SERVICE_URL/functions/greet?name=Alice"
 ```
 
-**The endpoint is open to any caller — there is no built-in authentication.** A function which should only be reachable by some callers must check `request.headers` or `request.cookies` itself and answer accordingly (for example by comparing a shared secret held in a `Constant` — see [constants.md](constants.md)).
+**The endpoint is open to any caller — there is no built-in authentication.** Nothing is checked before your code runs: the function itself must enforce access control before it does anything sensitive. See [Authenticating a Caller](#authenticating-a-caller) below.
 
 ## Writing the Code
 
@@ -134,9 +134,10 @@ return { name: product.name, price: product.price };
 - **`response`** — `status(code)`, `setHeader(name, value)` / `set(...)`, `send(body)`, `json(body)`, `end()`, `isSent()`. Chainable. Use it when you need a status code, a header or a non-JSON body; otherwise just `return` a value.
 - **`crud`** — `create`, `read`, `update`, `delete`, each taking the same query object as the WebSocket CRUD API minus the `action` property (see [websocket-api.md](websocket-api.md)). Runs as the account admin, so **access-control rules do not restrict it** and realtime subscribers are notified of writes.
 - **`r`** — a ReQL query builder scoped to the service's own database, for queries which the CRUD API cannot express. Finish a chain with `.run()`. Terms which would leave the database, run code on it or stream changes (`db`, `js`, `http`, `changes`, `grant`, ...) are blocked, and a chain may be at most 100 terms long.
+- **`auth`** — `verifyToken(signedToken)` and `signToken(token)`, for the JWTs of your own users. See [Authenticating a Caller](#authenticating-a-caller).
 - **`fetch(url, options)`** — see below.
 - **`console`** — `log`/`info`/`debug`/`warn`/`error` write to the service log (visible on the dashboard `Logs` page), prefixed with the function name.
-- **`process.env`** — the account's `Constant` records, each typed as it was declared. See [constants.md](constants.md).
+- **`process.env`** — the account's `Constant` records, each typed as it was declared, plus the platform constants (`SAASUFY_ACCOUNT_ID`, `SAASUFY_SERVICE_AUTH_KEY`, ...). See [constants.md](constants.md).
 
 Only standard ECMAScript builtins are available otherwise. There is no `require`/`import`, no Node API, no timers (`setTimeout`) and no filesystem.
 
@@ -176,6 +177,117 @@ Invocations run on a pool of 4 VMs per service worker; a call which waits more t
 - `507` — the function exceeded its memory limit.
 - `500` — the function threw; the message is returned.
 
+## Authenticating a Caller
+
+The hook runs your code for anyone who calls it, so **every function must enforce its own access control before performing a sensitive operation**. This matters more than usual because `crud` and `r` run as the account admin: access-control rules do not restrict them, so a function which writes based on unverified input is an open door to the whole dataset.
+
+Which check to use depends on who the caller is:
+
+- **A user of your app** → verify their JWT with `auth.verifyToken`, below.
+- **A third-party webhook** → compare a shared secret from the request against a `Constant`. See [constants.md](constants.md).
+- **Nobody in particular** (a genuinely public endpoint) → still validate and bound the input, and never let `params` choose which record or model is touched.
+
+### The auth global
+
+`auth` signs and verifies JSON Web Tokens with your `serviceAuthKey` — the same key the service signs its WebSocket clients' tokens with. A token your function verifies is therefore the very token your logged-in users already hold, and a token it signs is one those users can log in with.
+
+```js
+let claims = await auth.verifyToken(incomingToken);
+let outgoingToken = await auth.signToken({ accountId: claims.accountId });
+```
+
+Both return a promise, so both must be awaited.
+
+- `verifyToken(signedToken, key, options)` resolves with the token's claims, or rejects if the signature, the expiry or any constraint in `options` fails.
+- `signToken(token, key, options)` resolves with the signed string. It expires after your `serviceAuthKey` JWT expiry unless `options.expiresIn` (in seconds) says otherwise.
+- `key` and `options` are both optional. Left out, the key is your `serviceAuthKey` and the options are the service's own. Pass a key to work with a token of a different secret, such as `process.env.SAASUFY_EXTERNAL_AUTH_KEY`.
+
+A rejection carries the reason in its message — `TokenExpiredError: jwt expired`, `JsonWebTokenError: invalid signature` — so a function can tell an expired token from a forged one. Do not pass that message back to the caller.
+
+### Verifying the Authorization header
+
+Send the user's signed JWT as a bearer token. Header names arrive lower-cased, so read `request.headers.authorization`:
+
+```js
+let header = request.headers.authorization || '';
+let signedToken = header.replace(/^Bearer /i, '');
+
+let token;
+try {
+  token = await auth.verifyToken(signedToken);
+} catch (error) {
+  response.status(401).json({ error: 'Unauthorized' });
+  return;
+}
+
+// Scope every read and write to the verified identity, never to params.
+let account = await crud.read({ type: 'Account', id: token.accountId });
+return { email: account.email };
+```
+
+The claims on `token` are the same ones your access-control rules see — `accountId` above all, plus whatever your auth provider put there. See [authentication.md](authentication.md) and [access-control.md](access-control.md).
+
+### Getting the JWT on the frontend
+
+A user who is logged in over WebSockets **already has a signed JWT**; there is no need to mint a new one. It is held by the socket of the `socket-provider`, which is also where the `/files` endpoint takes it from (see [file-hosting.md](file-hosting.md)):
+
+```js
+let socket = document.querySelector('socket-provider').saasufySocket;
+
+// The token only exists once the socket has authenticated.
+if (socket.authState !== 'authenticated') {
+  for await (let event of socket.listener('authStateChange')) {
+    if (event.newState === 'authenticated') break;
+  }
+}
+
+let response = await fetch('https://saasufy.com/sid7999/functions/my-orders', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${socket.signedAuthToken}`
+  },
+  body: JSON.stringify({})
+});
+```
+
+The same token is persisted in `localStorage`, which is how it survives a page reload and syncs across tabs. Read it from there when no socket is at hand:
+
+```js
+let signedToken = localStorage.getItem(socket.authTokenName);
+```
+
+The key is whatever `auth-token-name` was set to on the `socket-provider`; by default it is `socketcluster.authToken.{hostname}` (with `:{port}` appended when the socket URL names one), so a provider on `wss://saasufy.com/sid7999/socketcluster/` stores it under `socketcluster.authToken.saasufy.com`. Prefer `socket.signedAuthToken` or `socket.authTokenName` over a hard-coded key.
+
+Cross-origin calls are fine: Saasufy returns `Access-Control-Allow-Origin: *` on service paths, so the preflight the `Authorization` header triggers passes. Do not set `credentials: 'include'`.
+
+From a script or another server, the same header works with any JWT you hold:
+
+```bash
+curl -XPOST "$SAASUFY_SERVICE_URL/functions/my-orders" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $SIGNED_AUTH_TOKEN" \
+  -d '{}'
+```
+
+This is the user's JWT, not your admin `SAASUFY_API_KEY`; the API key is only for the Admin HTTP API under `https://saasufy.com/api/`, and must never be sent to a cloud function hook or embedded in a frontend.
+
+### Signing a token
+
+`signToken` is for handing an identity to something which cannot log in through the normal flow — a magic link, an invite, a token for an external system:
+
+```js
+// Only ever sign for an identity the function has already verified.
+let signedToken = await auth.signToken(
+  { accountId: token.accountId, scope: 'download' },
+  null,
+  { expiresIn: 300 }
+);
+return { signedToken };
+```
+
+Because the default key is the `serviceAuthKey`, a token signed this way authenticates a WebSocket client as that `accountId`. Only ever put claims into one that the function has itself established, and keep the expiry short. For a token meant for a system outside Saasufy, sign it with `process.env.SAASUFY_EXTERNAL_AUTH_KEY` instead so it cannot be used to log into the service.
+
 ## Statistics and Analytics
 
 Cloud function calls are metered. See [schema-management.md](schema-management.md) for the models and how to read them:
@@ -187,5 +299,7 @@ Database operations which a function performs are also counted as the service op
 
 ## Related
 
-- [constants.md](constants.md) — values and secrets which a function reads through `process.env`.
+- [constants.md](constants.md) — values and secrets which a function reads through `process.env`, including the platform constants.
+- [authentication.md](authentication.md) — how a user gets the JWT which a function verifies.
+- [file-hosting.md](file-hosting.md) — the same `Authorization: Bearer` header, used on the `/files` endpoint.
 - [scheduled-tasks.md](scheduled-tasks.md) — running a cloud function on a timer instead of over HTTP.

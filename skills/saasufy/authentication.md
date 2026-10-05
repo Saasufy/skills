@@ -65,4 +65,12 @@ The OAuth flow is driven from the frontend by two components which must agree on
 
 For username/password login against Saasufy itself, see [log-in-form.md](log-in-form.md) and [log-out.md](log-out.md).
 
+### Identifying the User Inside a Cloud Function
+
+Components authenticate over the WebSocket connection, but the same login also identifies the user to a cloud function. A logged-in socket holds a signed JWT, and sending it to the function's hook as `Authorization: Bearer <signedAuthToken>` lets the function verify it with `auth.verifyToken` and act on the claims. See [cloud-functions.md](cloud-functions.md); a function can also sign a token with `auth.signToken` for cases outside the normal flow, such as a magic link.
+
+The token is on the socket as `socket.signedAuthToken` and in `localStorage` under `socket.authTokenName`, so an app which is already authenticated never needs to mint a new one. The same header also carries it to the `/files` endpoint, for a field whose `accessRead` is `restrict` — see [file-hosting.md](file-hosting.md).
+
+This is specific to those two endpoints. The HTTP CRUD API under `{SERVICE_URL}/api/` is not authenticated with a user's JWT; it takes an `APICredential` key instead and is not meant for your users' browsers. See [data-management.md](data-management.md).
+
 Note that logging out of your app does not log the user out of the OAuth provider; unless the provider session is also ended, the next log in will succeed without the user having to enter their credentials again. Providers which support RP-initiated log out (including Keycloak) can be logged out of by setting the `logout-url` attribute on the [log-out.md](log-out.md) component.

@@ -105,9 +105,34 @@ if (params.items.length > process.env.MAX_ITEMS_PER_ORDER) {
 
 Each invocation gets its own copy, so writing to `process.env` affects only the function doing the writing and only while it runs. A constant whose value column is empty reads as `null`.
 
-This `process.env` holds the account's constants and nothing else — the real environment of the service process is never reachable from inside a cloud function.
+This `process.env` holds the account's constants and the platform constants below, and nothing else — the real environment of the service process is never reachable from inside a cloud function.
 
 Constants are **not** exposed to the frontend or to the WebSocket/data API. They are only readable by cloud functions and by Admin API credentials.
+
+## Platform Constants
+
+Alongside your own constants, `process.env` carries the settings of the account itself — the values on the `Authentication` and `Settings` pages of the dashboard, which are fields of the `Account` record:
+
+| Name | Type | Value |
+| --- | --- | --- |
+| `SAASUFY_ACCOUNT_ID` | string | The account ID (UUID) which owns the service. |
+| `SAASUFY_ACCOUNT_EMAIL` | string | The account's email address. |
+| `SAASUFY_ACCOUNT_IS_INACTIVE` | boolean | Whether the account is marked inactive. |
+| `SAASUFY_SERVICE_AUTH_KEY` | string | The `serviceAuthKey`: the secret which signs and verifies the JWTs of your own users. See [cloud-functions.md](cloud-functions.md). |
+| `SAASUFY_SERVICE_AUTH_KEY_EXPIRY` | number | `serviceAuthKey` JWT expiry in milliseconds. |
+| `SAASUFY_EXTERNAL_AUTH_KEY` | string | The `externalAuthKey`: a separate secret for tokens handed to systems outside Saasufy. |
+| `SAASUFY_EXTERNAL_AUTH_KEY_EXPIRY` | number | `externalAuthKey` JWT expiry in milliseconds. |
+| `SAASUFY_SERVICE_AUTH_ENABLED` | boolean | Whether service authentication is enabled. |
+| `SAASUFY_SERVICE_ALLOW_ORIGIN` | string | The service's allowed-origin list. |
+| `SAASUFY_SERVICE_RESPONSE_TIMEOUT` | number | The service's admin client response timeout in milliseconds. |
+| `SAASUFY_SERVICE_WORKER_COUNT` | number | The total worker count across the fleet, which is the per-host count multiplied by the host count — not the number set on the `Settings` page. See [scalability.md](scalability.md). |
+
+Two things to know about them:
+
+- A setting which is not set is **absent** rather than `null`, so it can be tested the way a missing environment variable would be: `if (process.env.SAASUFY_EXTERNAL_AUTH_KEY) { ... }`.
+- They are applied **after** your own constants, so a `Constant` named `SAASUFY_SERVICE_AUTH_KEY` cannot shadow the real one and feed the function a key of its own choosing. Avoid the `SAASUFY_` prefix for your own constants.
+
+`SAASUFY_SERVICE_AUTH_KEY` is the key behind the `auth` global, which is the supported way to verify and sign user tokens; a function rarely needs to read the key itself. Treat all of these as secrets: never return one in a response or log it.
 
 Note that an aggregation pipeline has its own, separate constant mechanism (`AggregationConstantRule`); see [data-aggregation-pipelines.md](data-aggregation-pipelines.md).
 
